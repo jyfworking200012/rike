@@ -43,22 +43,22 @@ python -m http.server 8000
 
 > 注意：这种方式只在同一 WiFi 下有效，换网络就打不开。
 
-### 方案 B：静态托管（推荐，长期可用）
+### 方案 B：静态托管（✅ 已部署，2026-10-08）
 
-推到任意静态托管即可，例如 GitHub Pages：
+已推送到 GitHub Pages，线上地址：
 
-```bash
-cd rike
-git init
-git add .
-git commit -m "rike v1"
-git branch -M main
-git remote add origin git@github.com:jyfworking200012/rike.git
-git push -u origin main
-```
+**https://jyfworking200012.github.io/rike/**
 
-然后在仓库 Settings → Pages 里把 Source 设为 `main` 分支根目录，得到
-`https://jyfworking200012.github.io/rike/`。手机打开这个地址再加到主屏，换网络也能用。
+手机浏览器打开这个地址，然后：
+
+- **iOS Safari**：分享 → 添加到主屏幕
+- **Android Chrome**：菜单 → 添加到主屏幕
+
+加完之后从主屏图标进入，全屏运行，换网络也能用。
+
+仓库：https://github.com/jyfworking200012/rike （public，数据在各自浏览器本地，公开 URL 无隐私风险）。
+后续更新：改完 `index.html` 后 `git add . && git commit -m "..." && git push` 即自动重新部署（1-2 分钟生效）；
+若改了 `sw.js`，记得把文件内 `CACHE` 版本号 +1，否则旧缓存可能不刷新。
 
 ### 方案 C：只看不用
 
