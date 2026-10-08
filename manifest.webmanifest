@@ -1,0 +1,20 @@
+{
+  "name": "日课",
+  "short_name": "日课",
+  "description": "把现实作息打卡转化为文本肉鸽冒险的资源引擎",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

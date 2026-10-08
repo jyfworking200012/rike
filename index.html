@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="日课">
+<meta name="format-detection" content="telephone=no">
+<title>日课</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0d12'/%3E%3Ccircle cx='32' cy='26' r='11' fill='none' stroke='%23d9a441' stroke-width='3'/%3E%3Cpath d='M14 52h36M22 44h20' stroke='%23d9a441' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0b0d12;--panel:#131822;--panel2:#1a202b;--line:#252c3a;--line2:#333c4d;
+  --text:#e6e4df;--dim:#8a909c;--dim2:#5d6472;
+  --amber:#d9a441;--amber-d:#6b5220;
+  --c-body:#6fb3a8;--c-mind:#8ba0dd;--c-will:#cf8282;
+  --ok:#7fb069;--bad:#c9605c;
+  --r:14px;
+}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:15px;line-height:1.65;
+  overscroll-behavior-y:none;
+  -webkit-font-smoothing:antialiased;
+}
+.serif{font-family:"Songti SC","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif}
+#app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+
+/* ---------- header ---------- */
+#hdr{
+  position:sticky;top:0;z-index:20;
+  background:rgba(11,13,18,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  padding:calc(env(safe-area-inset-top) + 11px) 16px 11px;
+}
+.hd-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.hd-date{font-size:16px;font-weight:600;letter-spacing:.02em}
+.hd-streak{font-size:12px;color:var(--dim);margin-top:2px}
+.hd-streak b{color:var(--amber);font-size:13px}
+.mul{color:var(--amber);margin-left:4px;font-weight:600}
+.hd-res{display:flex;gap:14px;flex:0 0 auto}
+.res{font-size:12px;color:var(--dim);text-align:right;line-height:1.35}
+.res b{display:block;color:var(--text);font-size:16px;font-weight:600;letter-spacing:.01em}
+.res b .sub{font-size:11px;color:var(--dim2);font-weight:400}
+.res.e b{color:#7fc8dd}
+.res.p b{color:var(--amber)}
+
+/* ---------- main ---------- */
+main{flex:1;padding:14px 16px calc(78px + env(safe-area-inset-bottom))}
+.view{display:none}
+.view.on{display:block;animation:fadeIn .22s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+.sec-title{font-size:12px;color:var(--dim2);letter-spacing:.14em;margin:20px 2px 9px;font-weight:600}
+.sec-title:first-child{margin-top:4px}
+
+/* ---------- task card ---------- */
+.task{
+  display:flex;align-items:center;gap:12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 14px;margin-bottom:9px;cursor:pointer;
+  transition:transform .12s ease,border-color .2s,background .2s;
+  position:relative;overflow:hidden;
+}
+.task::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c,transparent);opacity:.9}
+.task:active{transform:scale(.982)}
+.task.done{background:#0f151e;border-color:#20302a}
+.task.done .t-name{color:var(--dim2);text-decoration:line-through;text-decoration-color:var(--dim2);text-decoration-thickness:1px}
+.t-idx{
+  width:26px;height:26px;border-radius:50%;border:1px solid var(--line2);
+  display:grid;place-items:center;font-size:12px;color:var(--dim);flex:0 0 auto;transition:all .2s;
+}
+.task.done .t-idx{background:var(--ok);border-color:var(--ok);color:#0b0d12;font-weight:700}
+.t-mid{flex:1;min-width:0}
+.t-name{font-size:15px;font-weight:500;transition:color .2s}
+.t-meta{font-size:11.5px;color:var(--dim2);margin-top:1px}
+.t-meta .at{color:var(--c)}
+.t-evi{
+  flex:0 0 auto;width:30px;height:30px;border-radius:9px;border:1px solid var(--line2);
+  background:transparent;display:grid;place-items:center;font-size:14px;color:var(--dim2);
+  cursor:pointer;transition:all .18s;font-family:inherit;
+}
+.t-evi.on{color:var(--amber);border-color:var(--amber-d);background:#1c1608}
+.t-evi.undo{color:var(--dim)}
+.t-check{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;color:transparent;font-size:13px}
+.task.done .t-check{border-color:var(--ok);color:var(--ok)}
+
+/* ---------- progress ---------- */
+.daybar{margin:14px 2px 0}
+.daybar .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:6px}
+.track{height:6px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.track > i{display:block;height:100%;background:linear-gradient(90deg,var(--amber-d),var(--amber));border-radius:99px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+
+/* ---------- rebuild banner / daily line / proximity ---------- */
+.rebuild-banner{
+  margin:14px 2px 0;padding:11px 13px;border-radius:12px;font-size:13px;line-height:1.55;
+  background:#1c1608;border:1px solid var(--amber-d);color:#e8cf95;
+}
+.rebuild-banner b{color:var(--amber)}
+.daily-line{margin:0 2px 4px;font-size:12px;color:var(--dim2);text-align:center;letter-spacing:.03em}
+.prox{display:flex;gap:7px;margin:12px 2px 0}
+.prox-item{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 10px;min-width:0}
+.prox-item .px-a{font-size:11px;font-weight:600;letter-spacing:.06em}
+.prox-item .px-n{font-size:11.5px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prox-item .px-d{font-size:13px;font-weight:700;margin-top:3px}
+.prox-item .px-d small{font-size:10.5px;color:var(--dim2);font-weight:400}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:block;width:100%;padding:13px;border-radius:12px;border:1px solid var(--line2);
+  background:var(--panel2);color:var(--text);font-size:15px;font-family:inherit;font-weight:500;
+  cursor:pointer;transition:all .15s;text-align:center;
+}
+.btn:active{transform:scale(.985)}
+.btn.primary{background:linear-gradient(180deg,#c99a3a,#a87c25);border-color:#c99a3a;color:#16120a;font-weight:600}
+.btn.primary:disabled{background:var(--panel2);border-color:var(--line);color:var(--dim2);cursor:not-allowed}
+.btn.ghost{background:transparent;border-color:var(--line2);color:var(--dim)}
+.btn.sm{padding:9px;font-size:13.5px;border-radius:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+/* ---------- entrance ---------- */
+.ent{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:all .15s}
+.ent:active{transform:scale(.985)}
+.ent.sel{border-color:var(--amber);background:#191509}
+.ent .ic{font-size:20px;flex:0 0 auto;line-height:1.3}
+.ent .nm{font-size:14.5px;font-weight:600}
+.ent .ds{font-size:12px;color:var(--dim);margin-top:1px}
+.ent .tg{font-size:10.5px;color:var(--dim2);margin-top:4px;letter-spacing:.04em}
+
+/* ---------- attrs ---------- */
+.attr-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:9px}
+.attr-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.attr-nm{font-size:14px;font-weight:600}
+.attr-nm .d{color:var(--dim2);font-weight:400;font-size:12px;margin-left:6px}
+.attr-v{font-size:22px;font-weight:700;letter-spacing:.01em}
+.attr-next{font-size:11.5px;color:var(--dim2);margin-top:7px}
+.attr-next.locked{color:var(--dim)}
+
+/* ---------- unlock list ---------- */
+.ul-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);margin-bottom:6px;font-size:13px}
+.ul-item.lock{opacity:.52}
+.ul-item .nm{flex:1;min-width:0}
+.ul-item .req{font-size:11.5px;color:var(--dim2);flex:0 0 auto}
+.ul-item .ok{color:var(--ok);flex:0 0 auto;font-size:13px}
+
+/* ---------- traits ---------- */
+.trait{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 9px;border-radius:8px;background:#1b2230;border:1px solid var(--line2);color:var(--text);margin:0 5px 5px 0}
+.trait.tmp{border-color:#2f3d52;background:#161d29}
+.trait.perm{border-color:var(--amber-d);background:#1c1608;color:#e8cf95}
+.trait .x{color:var(--dim2);cursor:default;font-size:11px}
+
+/* ---------- shop ---------- */
+.tier{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px;margin-bottom:9px}
+.tier .lv{flex:0 0 auto;width:46px;text-align:center}
+.tier .lv .n{font-size:19px;font-weight:700;color:var(--amber);line-height:1.15}
+.tier .lv .u{font-size:10px;color:var(--dim2)}
+.tier .bd{flex:1;min-width:0}
+.tier .tx{font-size:14px;font-weight:500}
+.tier .sub{font-size:11.5px;color:var(--dim2);margin-top:2px}
+.tier .act{flex:0 0 auto}
+.tier .act button{padding:7px 13px;font-size:12.5px;border-radius:9px;border:1px solid var(--amber-d);background:#1c1608;color:var(--amber);font-family:inherit;cursor:pointer;font-weight:600}
+.tier .act button:disabled{border-color:var(--line);background:transparent;color:var(--dim2);cursor:not-allowed;font-weight:400}
+
+/* ---------- modal ---------- */
+#modal{position:fixed;inset:0;z-index:60;background:var(--bg);display:none;flex-direction:column}
+#modal.on{display:flex}
+#modal .mhdr{
+  padding:calc(env(safe-area-inset-top) + 11px) 16px 11px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;flex:0 0 auto;
+}
+#modal .mhdr .mid{flex:1;min-width:0}
+#modal .mbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.mwrap{max-width:560px;margin:0 auto;width:100%}
+.focus-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--dim)}
+.focus-bar{flex:1;height:8px;background:#1a1f2a;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.focus-bar > i{display:block;height:100%;background:linear-gradient(90deg,#5d7fb8,#8ba0dd);transition:width .4s ease}
+.focus-bar.low > i{background:linear-gradient(90deg,#a04a46,#c9605c)}
+
+.ev-tagline{font-size:11px;color:var(--dim2);letter-spacing:.16em;margin-bottom:9px}
+.ev-title{font-size:19px;font-weight:600;letter-spacing:.03em;margin-bottom:11px}
+.ev-text{font-size:15.5px;line-height:1.95;color:#d8d6d0;margin-bottom:20px}
+.ev-text em{color:var(--amber);font-style:normal}
+
+.opt{
+  display:block;width:100%;text-align:left;padding:13px 14px;border-radius:12px;
+  border:1px solid var(--line2);background:var(--panel);color:var(--text);
+  font-size:14.5px;font-family:inherit;line-height:1.5;cursor:pointer;margin-bottom:9px;
+  transition:all .15s;position:relative;
+}
+.opt:active{transform:scale(.985)}
+.opt.pick{border-color:var(--amber);background:#191509}
+.opt .rq{display:block;font-size:11px;margin-top:4px;color:var(--dim2)}
+.opt .rq.pass{color:var(--ok)}
+.opt .rq.gamble{color:var(--amber)}
+.opt .rq.cost{color:var(--bad)}
+.opt:disabled{opacity:.42;cursor:not-allowed}
+
+.res-box{border-left:2px solid var(--amber);padding:3px 0 3px 14px;margin:6px 0 20px}
+.res-box .tx{font-size:15px;line-height:1.95;color:#d8d6d0}
+.res-box.bad{border-color:var(--bad)}
+.res-box.good{border-color:var(--ok)}
+.gain{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.gain span{font-size:12.5px;padding:4px 10px;border-radius:8px;background:#1b2230;border:1px solid var(--line2)}
+.gain span.p{color:var(--amber);border-color:var(--amber-d);background:#1c1608}
+.gain span.b{color:var(--c-body);border-color:#2c4a46}
+.gain span.m{color:var(--c-mind);border-color:#2c3a54}
+.gain span.w{color:var(--c-will);border-color:#503534}
+.gain span.f{color:#8ba0dd;border-color:#2f3d52}
+
+.pick-card{border:1px solid var(--line2);background:var(--panel);border-radius:12px;padding:13px;margin-bottom:9px;cursor:pointer;transition:all .15s}
+.pick-card:active{transform:scale(.985)}
+.pick-card .nm{font-size:15px;font-weight:600;color:#e8cf95;margin-bottom:3px}
+.pick-card .ds{font-size:12.5px;color:var(--dim)}
+.pick-card .ty{font-size:10.5px;color:var(--dim2);letter-spacing:.1em;margin-top:5px}
+
+/* ---------- float / toast ---------- */
+.float{position:fixed;left:50%;top:34%;transform:translateX(-50%);z-index:90;pointer-events:none;font-size:14.5px;font-weight:600;color:var(--amber);text-shadow:0 2px 14px #000,0 0 3px #000;animation:floatUp 1.75s cubic-bezier(.2,.7,.3,1) forwards;white-space:nowrap}
+@keyframes floatUp{0%{opacity:0;transform:translate(-50%,10px) scale(.92)}16%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-58px) scale(1)}}
+#toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:95;background:#1e2533;border:1px solid var(--line2);color:var(--text);font-size:13px;padding:9px 15px;border-radius:11px;opacity:0;transition:opacity .28s,transform .28s;pointer-events:none;max-width:86%;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(-5px)}
+
+.empty{text-align:center;color:var(--dim2);font-size:13px;padding:26px 10px;line-height:1.9}
+.note{font-size:12px;color:var(--dim2);line-height:1.8;margin-top:9px}
+.hr{height:1px;background:var(--line);margin:18px 0}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.stat .k{font-size:11.5px;color:var(--dim2)}
+.stat .v{font-size:19px;font-weight:700;margin-top:2px}
+
+input.f,textarea.f{
+  width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:10px;
+  color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;
+}
+input.f:focus,textarea.f:focus{border-color:var(--amber-d)}
+input.f::placeholder{color:var(--dim2)}
+label.fl{display:block;font-size:12px;color:var(--dim);margin:12px 2px 5px}
+
+/* ================= 移动端排版适配 ================= */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden}
+
+/* iOS 聚焦输入框时若字号 <16px 会自动放大整页 —— 必须 ≥16px */
+input.f,textarea.f{font-size:16px}
+
+/* 手机阅读字号下限：正文与选项 */
+.ev-text{font-size:16px;line-height:2.05}
+.ev-title{font-size:20px}
+.opt{font-size:15px;min-height:48px;padding:14px}
+.task{min-height:58px}
+.t-name{font-size:15.5px}
+.ent{min-height:56px}
+.tier .tx{font-size:14.5px}
+.res-box .tx{font-size:15.5px}
+.attr-next{font-size:12px}
+.ul-item{font-size:13px}
+.note{font-size:12.5px}
+
+/* 触控目标：按钮统一不低于 44px */
+.btn{min-height:46px;display:flex;align-items:center;justify-content:center}
+.btn.sm{min-height:42px}
+.t-evi{width:32px;height:32px}
+.tier .act button{min-height:34px}
+
+/* 窄屏（iPhone SE / 小屏安卓，320-390px）紧凑化 */
+@media (max-width:390px){
+  main{padding-left:12px;padding-right:12px}
+  #hdr{padding-left:12px;padding-right:12px}
+  .hd-date{font-size:15px}
+  .hd-res{gap:9px}
+  .res{font-size:11px}
+  .res b{font-size:15px}
+  .t-name{font-size:14.5px}
+  .t-meta{font-size:11px}
+  .attr-v{font-size:20px}
+  .tier{gap:9px;padding:11px 12px}
+  .tier .lv{width:40px}
+  .tier .lv .n{font-size:17px}
+  .tier .act button{padding:6px 10px;font-size:12px}
+  .ev-title{font-size:18px}
+  .ev-text{font-size:15.5px;line-height:1.95}
+  .opt{font-size:14.5px;padding:13px}
+}
+
+/* 极窄屏（320px）进一步压缩顶栏 */
+@media (max-width:340px){
+  .hd-res{gap:7px}
+  .res b{font-size:14px}
+  .tier .lv{width:34px}
+}
+
+/* 横屏矮屏：压缩上下留白，保证内容可见 */
+@media (orientation:landscape) and (max-height:480px){
+  #hdr{padding-top:calc(env(safe-area-inset-top) + 6px);padding-bottom:6px}
+  main{padding-top:8px}
+  .hd-streak{display:none}
+}
+
+/* 尊重系统「减弱动态效果」设置 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr">
+    <div class="hd-row">
+      <div>
+        <div class="hd-date" id="hdDate">—</div>
+        <div class="hd-streak" id="hdStreak">—</div>
+      </div>
+      <div class="hd-res">
+        <div class="res e"><b id="hdEnergy">0<span class="sub">/6</span></b>精力</div>
+        <div class="res p"><b id="hdPoints">0</b>积分</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="view on" id="v-day"></section>
+    <section class="view" id="v-run"></section>
+    <section class="view" id="v-attr"></section>
+    <section class="view" id="v-shop"></section>
+  </main>
+
+  <nav id="tabs">
+    <button data-v="day" class="on"><span class="ico">☰</span>日课</button>
+    <button data-v="run"><span class="ico">◈</span>冒险</button>
+    <button data-v="attr"><span class="ico">◮</span>属性</button>
+    <button data-v="shop"><span class="ico">◇</span>兑换</button>
+  </nav>
+</div>
+
+<div id="modal"><div class="mhdr" id="mHdr"></div><div class="mbody"><div class="mwrap" id="mBody"></div></div></div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================================
+   《日课》 — 现实映射式文本肉鸽
+   设计依据：rike/docs/GDD.md v0.2
+   铁律（GDD 支柱，代码内不得违反）：
+     01 属性与积分只能由「现实打卡」产出，事件不得发放属性
+     02 打卡一次点击，不弹二次确认
+     03 打卡后立刻结算反馈
+     04 任何情况下不清零属性 / 积分 / 词条
+     05 属性门槛决定可选选项数量 —— 属性必须真实影响 run
+   硬约束：连击系数只作用于积分，绝不作用于精力（GDD 3.4 明确标记的 bug 风险）
+   ========================================================================= */
+
+/* ---------------------------- 常量 ---------------------------- */
+const VERSION = 1;
+const SAVE_KEY = 'rike_save_v1';
+const ENERGY_MAX = 6;
+const RUN_COST = 3;
+const FREE_PASS_MAX = 3;
+const RUN_NODES = 6;          // 普通节点数
+const ANCHOR_AT = 5;          // 第 5 个节点为锚点
+const TRAIT_PICK_AFTER = 2;   // 第 2 个节点后给词条三选一
+const FOCUS_BASE = 8;
+const FOCUS_MAX = 20;
+const FAIL_COST = 2;          // 普通失败扣定力
+const OVERLEVEL_COST = 4;     // 越级失败扣双倍
+
+/* ---------------------------- 打卡任务（GDD 4.1） ----------------------------
+   min: 预估耗时（分钟），用于「剩余时间」计量（the-forge 心法：数字让人决策，方框让人自责）
+------------------------------------------------------------------------- */
+const TASKS = [
+  {id:'wake',   name:'按时起床', time:'起床点',  attr:'will', min:2},
+  {id:'train',  name:'出去锻炼', time:'19:00',   attr:'body', min:40, weekend:false},
+  {id:'shower', name:'去洗澡',   time:'20:30',   attr:'body', min:15},
+  {id:'study',  name:'学习知识', time:'21:00',   attr:'mind', min:30},
+  {id:'quit',   name:'戒断打卡', time:'22:00',   attr:'will', min:2},
+  {id:'read',   name:'看娱乐书籍',time:'22:30',  attr:'mind', min:30},
+  {id:'sleep',  name:'准点睡觉', time:'睡觉点',  attr:'body', min:2}
+];
+const ATTR_NAME = {body:'身', mind:'智', will:'志'};
+const ATTR_DESC = {body:'行动力', mind:'洞察力', will:'抗压力'};
+const ATTR_VAR  = {body:'--c-body', mind:'--c-mind', will:'--c-will'};
+
+/* 每日一句：按日期确定性抽取，刷新不重掷（Daily Directive 思路） */
+const DAILY_LINES = [
+  '今天也只有一个你，别把它整个交给别人的安排。',
+  'routine 不是牢笼，是你亲手搭的脚手架。',
+  '深夜的便利店永远亮着，但你的精力不是。',
+  '把今天过完，比把今天过好更接近过好。',
+  '你不需要状态，你只需要开始。',
+  '城市每天醒一次，你也可以。',
+  '定力不是硬撑，是知道自己在哪条路上。',
+  '小到不会失败的事，做七件就是一天。',
+  '断过的链子接回来，痕迹会变成强度。',
+  '别数错过了几天，数今天还剩几件。',
+  '光从门缝里进来的时候，去推那扇门。',
+  '睡前的那本书，是你给自己的最后一块领地。'
+];
+function dailyLine(){
+  let h = 0;
+  const s = todayStr();
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return DAILY_LINES[h % DAILY_LINES.length];
+}
+
+/* ---------------------------- 属性解锁表（GDD 6.2） ---------------------------- */
+const UNLOCKS = [
+  {attr:'body', val:20, name:'「夜跑」类事件',      kind:'tag',  key:'body'},
+  {attr:'body', val:45, name:'「远行」世界',        kind:'world',key:'far'},
+  {attr:'body', val:90, name:'「荒野」世界',        kind:'world',key:'wild'},
+  {attr:'mind', val:15, name:'「书斋」类事件',      kind:'tag',  key:'study'},
+  {attr:'mind', val:35, name:'「古籍」事件链',      kind:'event',key:'archive'},
+  {attr:'mind', val:70, name:'「档案馆」世界',      kind:'world',key:'archive'},
+  {attr:'will', val:15, name:'「独处」类选项',      kind:'tag',  key:'alone'},
+  {attr:'will', val:35, name:'「绝境」选项',        kind:'event',key:'cliff'},
+  {attr:'will', val:70, name:'「长夜」世界',        kind:'world',key:'longnight'}
+];
+
+/* ---------------------------- 入口（GDD 5.1） ---------------------------- */
+const ENTRANCES = [
+  {id:'bus',   ic:'🚌', name:'末班车',  desc:'最后一班公交，车厢里的人都低着头。', tg:['street','crowd','night']},
+  {id:'old',   ic:'🏚', name:'老楼',    desc:'三十年的老楼，声控灯坏了一半。',     tg:['old','dark','alone']},
+  {id:'store', ic:'🏪', name:'便利店',  desc:'二十四小时营业，荧光灯白得发青。',   tg:['sound','crowd','home']}
+];
+
+/* ---------------------------- 词条池（GDD 5.4 · 24 个） ----------------------------
+   eff 字段含义：
+     judge          全局判定加值
+     tags{tag:n}    命中事件标签时的判定加值
+     dmgReduce      每次失败少扣的定力
+     nodePoints     每通过 1 个节点的额外积分
+     successPoints  每次成功判定的额外积分
+     initFocus      初始定力修正
+     settleAdd      结算固定加分
+     settleMul      结算百分比加成
+------------------------------------------------------------------------- */
+const TRAITS = [
+  {id:'t_night',  name:'夜视',  type:'tmp', desc:'含「夜」标签的事件判定 +2',    eff:{tags:{night:2}}},
+  {id:'t_old',    name:'旧识',  type:'tmp', desc:'含「旧」标签的事件判定 +2',    eff:{tags:{old:2}}},
+  {id:'t_calm',   name:'冷静',  type:'tmp', desc:'每次失败少扣 1 点定力',        eff:{dmgReduce:1}},
+  {id:'t_obsess', name:'执念',  type:'tmp', desc:'每通过 1 节点 +1 积分，初始定力 -2', eff:{nodePoints:1, initFocus:-2}},
+  {id:'t_bone',   name:'铁骨',  type:'tmp', desc:'所有判定 +1',                 eff:{judge:1}},
+  {id:'t_insight',name:'明察',  type:'tmp', desc:'含「智」门槛的判定 +3',        eff:{attrJudge:{mind:3}}},
+  {id:'t_iron',   name:'铁心',  type:'tmp', desc:'含「志」门槛的判定 +3',        eff:{attrJudge:{will:3}}},
+  {id:'t_echo',   name:'回声',  type:'tmp', desc:'含「声」标签的事件判定 +2',    eff:{tags:{sound:2}}},
+  {id:'t_mirror', name:'镜面',  type:'tmp', desc:'含「镜」标签的事件判定 +2',    eff:{tags:{mirror:2}}},
+  {id:'t_wet',    name:'湿衣',  type:'tmp', desc:'含「雨」标签事件判定 +2，初始定力 -1', eff:{tags:{rain:2}, initFocus:-1}},
+  {id:'t_crowd',  name:'人潮',  type:'tmp', desc:'含「人群」标签事件判定 +2',    eff:{tags:{crowd:2}}},
+  {id:'t_home',   name:'归途',  type:'tmp', desc:'含「街」标签的事件判定 +2',    eff:{tags:{street:2}}},
+  {id:'t_lamp',   name:'灯下',  type:'tmp', desc:'含「暗」标签的事件判定 +2',    eff:{tags:{dark:2}}},
+  {id:'t_deep',   name:'沉潜',  type:'tmp', desc:'初始定力 +3',                 eff:{initFocus:3}},
+  {id:'t_quick',  name:'手快',  type:'tmp', desc:'每次成功判定额外 +1 积分',     eff:{successPoints:1}},
+  {id:'t_light',  name:'轻装',  type:'tmp', desc:'初始定力 -1，结算额外 +5 积分', eff:{initFocus:-1, settleAdd:5}},
+  {id:'p_morning',name:'晨型人',type:'perm',desc:'所有判定 +1',                 eff:{judge:1}},
+  {id:'p_ledger', name:'手账',  type:'perm',desc:'每次 run 结算积分 +10%',      eff:{settleMul:0.10}},
+  {id:'p_walker', name:'长夜行',type:'perm',desc:'初始定力 +2',                 eff:{initFocus:2}},
+  {id:'p_stomach',name:'铁胃',  type:'perm',desc:'每次失败少扣 1 点定力',        eff:{dmgReduce:1}},
+  {id:'p_scav',   name:'拾荒者',type:'perm',desc:'每次 run 结算额外 +3 积分',    eff:{settleAdd:3}},
+  {id:'p_veteran',name:'老练',  type:'perm',desc:'含「旧」标签的事件判定 +2',    eff:{tags:{old:2}}},
+  {id:'p_syn',    name:'通感',  type:'perm',desc:'所有判定 +2',                 eff:{judge:2}},
+  {id:'p_const',  name:'恒定',  type:'perm',desc:'每次 run 结算额外 +8 积分',    eff:{settleAdd:8}}
+];
+
+/* ---------------------------- 事件骨架（30 个 · GDD 5.6） ----------------------------
+   req: [属性, 门槛] —— 省略则必成。门槛 ≤ 属性时判定必过（GDD 5.3 红线）。
+   unlock: [属性, 门槛] —— 属性不足则该事件不进池。
+------------------------------------------------------------------------- */
+const EVENTS = [
+{id:'ev_lamppost', tags:['night','street'], w:10, title:'路灯下的清点人',
+ t:'路灯坏了一盏，明暗交界处坐着个老人。他面前摊着一张旧报纸，报纸上是一堆硬币。他数得很慢，数到一半，又把硬币全推倒重来。',
+ o:[
+  {t:'蹲下来和他一起数', req:['mind',6], ok:'你数完最后一枚时，他抬头说了句"谢谢"，把三枚硬币按进你手心。手心是热的。', okE:{pts:3}},
+  {t:'站着看一会儿',     ok:'你又看了两轮。他始终没数完。你忽然意识到，他大概不需要数完。', okE:{pts:1, focus:1}}
+ ]},
+{id:'ev_vending', tags:['night','sound','street'], w:10, title:'自动贩卖机的找零',
+ t:'贩卖机的取货口下面，掉出来一枚硬币。你投进去的是一张十元。',
+ o:[
+  {t:'把硬币投回机器',   ok:'硬币滚回机器深处。咔哒一声，掉出来第二瓶水。你没有拿。', okE:{pts:2, focus:1}},
+  {t:'拿走它',           ok:'硬币在你口袋里，一直是凉的。', okE:{pts:1}}
+ ]},
+{id:'ev_lastbus', tags:['night','crowd','street'], w:9, title:'末班车的空座',
+ t:'末班车上人不多。你坐下之后，对面那个位置上的人抬头看了你一眼——那张脸你认得，但想不起在哪见过。',
+ o:[
+  {t:'过去打个招呼', req:['will',8], ok:'他先开了口，念出一个你早已不用的旧称呼。你们聊了三站。', okE:{pts:4}},
+  {t:'假装看手机',   ok:'到站时你抬头，对面已经空了。', okE:{pts:1}}
+ ]},
+{id:'ev_wetroad', tags:['rain','street','dark'], w:9, title:'雨后的积水',
+ t:'积水比你想象的深。水面平得像没被打扰过，倒映着一整条街的灯。你低下头——倒影里的街道，没有灯。',
+ o:[
+  {t:'用脚搅散它', ok:'水乱了。再平静下来时，倒影里也是灯了。你站了一会儿，觉得自己刚才看错了。', okE:{pts:2}},
+  {t:'绕开走',     ok:'你绕开了。回到小区门口，你发现鞋底是湿的。', okE:{pts:1, focus:-1}}
+ ]},
+{id:'ev_elevator', tags:['dark','old','alone'], w:9, title:'电梯里的第四层',
+ t:'你在三楼按下上行。电梯到了，门开，楼层显示屏上写着"4"。这栋楼没有四层。',
+ o:[
+  {t:'走进去',   req:['will',12], ok:'门关上。它没有动。过了几秒，门又开了——外面是三楼，和你出发时一模一样。', okE:{pts:5}},
+  {t:'等下一趟', ok:'下一趟显示"3"。你进去，按了上行。它动了。', okE:{pts:1}}
+ ]},
+{id:'ev_stairs', tags:['dark','old','sound'], w:9, title:'楼道声控灯',
+ t:'声控灯在你跺脚之前，就亮了。',
+ o:[
+  {t:'站着不动，等它灭', req:['mind',10], ok:'灯灭之后，你数到第二十七秒，它自己又亮了。', okE:{pts:4}},
+  {t:'快步上楼',         ok:'每一层的灯，都在你到达之前亮起。', okE:{pts:1}}
+ ]},
+{id:'ev_laundry', tags:['home','dark','alone'], w:8, title:'阳台上的晾衣绳',
+ t:'晾衣绳上挂着一件你不认识的衣服。你的阳台朝内，上面一层没有住人。',
+ o:[
+  {t:'把衣服取下来看', req:['body',10], ok:'衣领内侧缝着一个名字。字迹是你的。', okE:{pts:4}},
+  {t:'把窗帘拉上',     ok:'第二天早上，绳上是空的。', okE:{pts:1}}
+ ]},
+{id:'ev_kitchen', tags:['home','sound','alone'], w:8, title:'半夜厨房的水声',
+ t:'凌晨，你听见厨房有水声。你走进去，水龙头是关着的。',
+ o:[
+  {t:'打开水龙头，看它流什么', req:['mind',12], ok:'流出来的水是温的。你等了很久，它一直是温的。', okE:{pts:4}},
+  {t:'回床上接着睡',           ok:'水声在你躺下之后停了。你很快就睡着了。', okE:{pts:2, focus:1}}
+ ]},
+{id:'ev_neighbor', tags:['home','old','sound'], w:8, title:'隔壁的敲门声',
+ t:'有人敲隔壁的门，敲了很久。隔壁空置三年了。',
+ o:[
+  {t:'开门出去看', req:['will',10], ok:'楼道里没有人。隔壁门口放着一个纸箱，上面写着你的门牌号。', okE:{pts:4}},
+  {t:'把音乐开大一点', ok:'音乐停了之后，敲门声也停了。', okE:{pts:1}}
+ ]},
+{id:'ev_mirror', tags:['mirror','alone','home'], w:8, title:'镜子里的迟滞',
+ t:'洗手的时候，你抬手关水。镜子里的人，比你慢了半拍。',
+ o:[
+  {t:'盯着它，再抬一次手', req:['will',15], ok:'它跟上了。你看着自己的眼睛，觉得它在笑——而你确定自己没有。', okE:{pts:5}},
+  {t:'不看镜子，洗完就走', ok:'你走出去的时候，听见身后水龙头又被打开了。', okE:{pts:1}}
+ ]},
+{id:'ev_diary', tags:['old','alone','home'], w:8, title:'旧笔记本里的一页',
+ t:'整理旧物时，你翻到一本从没见过的笔记本。其中一页写着今天的日期，和你今天做过的每一件事。',
+ o:[
+  {t:'往后翻',        req:['mind',15], ok:'后面是空的。翻到最后一页，上面写着"别翻了"，字迹和你一模一样。', okE:{pts:5}},
+  {t:'合上，放回箱子', ok:'你把它放回去时，箱子里的东西重新变得陌生了。', okE:{pts:1}}
+ ]},
+{id:'ev_album', tags:['mirror','alone','old'], w:8, title:'相册里多出的一张',
+ t:'手机相册往下滑，多出一张你没拍过的照片。拍的是你现在坐着的这个角落，从天花板俯拍。',
+ o:[
+  {t:'放大看细节', req:['mind',18], ok:'照片角落有时间戳：三天后。', okE:{pts:5}},
+  {t:'删掉它',     ok:'删除成功。第二天，它在同一位置，换了个角度。', okE:{pts:1}}
+ ]},
+{id:'ev_cat', tags:['street','night','alone'], w:9, title:'巷口的黑猫',
+ t:'黑猫蹲在巷口，挡在你和回家之间。它没有跑，只是看着你。',
+ o:[
+  {t:'蹲下来，等它先动', req:['will',8], ok:'它站起来，往巷子里走了两步，回头等你。你跟进去一段路，它拐过一个弯不见了。那条巷子你从没走过——但尽头就是你家楼下。', okE:{pts:5}},
+  {t:'绕一大圈回家',     ok:'你多走了十分钟。到家的时候，猫在楼下等你。', okE:{pts:1}}
+ ]},
+{id:'ev_crowd', tags:['crowd','street'], w:9, title:'十字路口的人流',
+ t:'红灯。你身边站着七八个人，灯没变，所有人都在等。你忽然发现，没有一个人在玩手机。',
+ o:[
+  {t:'也跟着站直', ok:'绿灯亮的时候你抬起头。旁边的人已经散开了，只有你还站在原地，像是刚醒。', okE:{pts:2, focus:1}},
+  {t:'低头看手机', ok:'你的屏幕是黑的。抬头时，路口只剩你一个人。', okE:{pts:1}}
+ ]},
+{id:'ev_billboard', tags:['street','crowd'], w:8, title:'广告牌上的错字',
+ t:'楼顶广告牌上，"安心"两个字印成了"安息"。你怀疑自己看错了。',
+ o:[
+  {t:'换个角度再看一次', req:['mind',10], ok:'从侧面看是"安心"，从正面看是"安息"。你退后几步，两个字都对。', okE:{pts:4}},
+  {t:'不看了，继续走',   ok:'走出很远，你还是记得那两个字。', okE:{pts:1}}
+ ]},
+{id:'ev_shop', tags:['crowd','sound','night'], w:9, title:'深夜便利店的店员',
+ t:'凌晨的便利店，店员在柜台后面。你拿了瓶水去结账，他扫完码说："今天第三瓶了。"',
+ o:[
+  {t:'问他今天还有谁买过', req:['mind',8], ok:'他想了想，说："都是你。"', okE:{pts:4}},
+  {t:'笑一下，付钱走人',   ok:'他说了句"路上小心"。你走到门口，又听见他说了一遍。', okE:{pts:2}}
+ ]},
+{id:'ev_coin', tags:['street','night'], w:9, title:'地上的一枚硬币',
+ t:'地上有一枚硬币，正面朝上。你走过去，回头——那枚硬币正面朝下。',
+ o:[
+  {t:'回去把它翻过来', req:['will',12], ok:'你把它翻成正面。走出一段路再回头，它还是正面朝上。', okE:{pts:4}},
+  {t:'不管它',         ok:'第二天上班，同一个位置，同一枚硬币，正面朝上。', okE:{pts:1}}
+ ]},
+{id:'ev_umbrella', tags:['rain','crowd','street'], w:8, title:'借伞的人',
+ t:'下雨了。你在屋檐下站着。旁边一个人也没有伞，他忽然开口问你借。',
+ o:[
+  {t:'把伞借给他',     ok:'他撑着你的伞走进雨里，没说要还。第二天，你的伞挂在门口，是干的。', okE:{pts:3, focus:1}},
+  {t:'说自己也要用',   ok:'他点点头，退回屋檐深处。你再看那个方向，人已经不在了。', okE:{pts:1}}
+ ]},
+{id:'ev_clock', tags:['home','old'], w:8, title:'走慢了的挂钟',
+ t:'家里的挂钟慢了七分钟。你换了电池，它还是慢七分钟。',
+ o:[
+  {t:'把钟调到准点', req:['mind',8], ok:'你调准了。第二天早上，它又是慢七分钟。你想了想，把闹钟提前了七分钟。', okE:{pts:4}},
+  {t:'就让它慢着',   ok:'你习惯了看时间加七分钟。', okE:{pts:1}}
+ ]},
+{id:'ev_plant', tags:['home','alone'], w:8, title:'枯了又活的绿萝',
+ t:'那盆绿萝你两年没管了，上周彻底枯了。今天早上，它抽出了新叶。',
+ o:[
+  {t:'换土，搬到有光的地方', req:['body',8], ok:'翻盆的时候，底下压着一个塑料牌，是你刚搬来时写的字："好好活着"。', okE:{pts:4}},
+  {t:'浇点水，别的不管',     ok:'它继续长。你也没有再去看过它。', okE:{pts:2, focus:1}}
+ ]},
+{id:'ev_sofa', tags:['old','dark'], w:8, title:'楼道里的旧沙发',
+ t:'楼道里多了一张旧沙发，很旧，看着比你的年纪还大。物业说没人认领。',
+ o:[
+  {t:'坐上去试试', req:['will',15], ok:'你一坐下去，沙发的凹陷正好是你的形状。你起身之后，那个凹陷没有弹回来。', okE:{pts:5}},
+  {t:'从它旁边走过去', ok:'你每天从它旁边过。它一直在那儿，位置没变过。', okE:{pts:1}}
+ ]},
+{id:'ev_voice', tags:['sound','alone'], w:8, title:'耳机里的第二层声音',
+ t:'你戴着耳机听歌。副歌之间那两秒的空白里，有人在低声数数。',
+ o:[
+  {t:'调到最大声，找那个声音', req:['mind',15], ok:'数到三十七的时候，它停了。你摘下耳机，房间里很安静。你继续数了下去。', okE:{pts:5}},
+  {t:'换一首歌',               ok:'新歌的副歌之间，也有那两秒。', okE:{pts:1}}
+ ]},
+{id:'ev_map', tags:['mirror','street'], w:8, title:'手机地图上的灰点',
+ t:'地图上，你家楼下多了一个灰色的点。点开，是空白页。',
+ o:[
+  {t:'顺着定位走过去', req:['will',10], ok:'你走到楼下，站在那个坐标上。地图上，灰点变成了你。', okE:{pts:5}},
+  {t:'关掉地图',       ok:'下次打开，灰点还在。位置向东移了一点。', okE:{pts:1}}
+ ]},
+{id:'ev_runner', tags:['body','street','night'], w:9, unlock:['body',20], title:'夜跑的陌生人',
+ t:'夜跑道上有人在跑，配速和你一致。你加速，他也加速。你放慢，他也放慢。你们始终隔着二十米。',
+ o:[
+  {t:'停下来，等他跑过来', req:['body',25], ok:'他跑到你面前刹住，喘着气说："你今天比我早。"然后他跑远了。你不认识他。', okE:{pts:5}},
+  {t:'继续按自己的节奏跑', ok:'你按自己的节奏跑完。回头看，那二十米一直在。', okE:{pts:2, focus:1}}
+ ]},
+{id:'ev_bookstall', tags:['study','old','crowd'], w:9, unlock:['mind',15], title:'旧书摊的一册',
+ t:'夜市里有个旧书摊。最上面那本没有书名，翻开第一页是空白的。',
+ o:[
+  {t:'买下来，回去写第一句', req:['mind',20], ok:'你写下了日期。第二天翻开，第二页已经有字了——是你昨晚想到、但没写下来的那一句。', okE:{pts:5}},
+  {t:'放下',                 ok:'你走出很远，还记得它封面摸起来的手感。', okE:{pts:1}}
+ ]},
+/* ---------------------------- 锚点事件（第 5 节点必出） ---------------------------- */
+{id:'an_corridor', tags:['anchor','dark','old'], w:0, anchor:true, title:'长走廊',
+ t:'走廊比平时长。你走了三分钟，还没到头。两侧的门是一样的，门牌号在重复。',
+ o:[
+  {t:'继续往前走，不看门牌', req:['will',12], ok:'你闭着眼走。再睁开时，尽头是你的房门。你回头，走廊恢复了原来的长度。', okE:{pts:6}},
+  {t:'原路返回',             ok:'你转身走了很久，回到了出发的地方。走廊还在前面。', okE:{focus:-2}}
+ ]},
+{id:'an_stairwell', tags:['anchor','dark','sound'], w:0, anchor:true, title:'天井',
+ t:'楼道的天井里，有人从上往下看你。你抬头——每一层楼道口都站着一个人，长着同一张脸。',
+ o:[
+  {t:'大声问"你是谁"', req:['will',18], ok:'所有层的"你"同时开口，说的是同一句话："你是第几个？"', okE:{pts:7}},
+  {t:'低头，快步走完楼梯', ok:'你走到楼下。身后，脚步声响了六层。', okE:{focus:-2}}
+ ]},
+{id:'an_crossing', tags:['anchor','crowd','street'], w:0, anchor:true, title:'无人的十字路口',
+ t:'凌晨三点，全城的灯都亮着，路口一个人也没有，一辆车也没有。你走近时，信号灯全部变红。',
+ o:[
+  {t:'站在路口等', req:['will',15], ok:'你站了十分钟，灯没变。你忽然明白，它在等你先走。', okE:{pts:6}},
+  {t:'直接穿过去', req:['body',10], ok:'你走了过去。到对面时回头看，灯才变绿。', okE:{pts:5}},
+  {t:'换一条路',                    ok:'你绕了很远。回到主路时，那个路口的灯还是红的。', okE:{focus:-2}}
+ ]},
+{id:'an_mirrorhall', tags:['anchor','mirror','dark'], w:0, anchor:true, title:'镜廊',
+ t:'一栋写字楼的大堂，四面都是镜子。你站在正中间，有四个你。你抬一次手，它们抬了四次。',
+ o:[
+  {t:'同时向四个方向抬手', req:['mind',22], ok:'四个你都抬手了。这一次，它们比你快。', okE:{pts:7}},
+  {t:'闭上眼走出去',                      ok:'你数着步子走出去。再睁眼时，你站在大堂门外，手里攥着汗。', okE:{focus:-1}}
+ ]},
+{id:'an_deep', tags:['anchor','deep','dark'], w:0, anchor:true, deep:true, title:'深处的门',
+ t:'走廊尽头有一扇门，门缝里有光，但光是冷的。门上的把手，是温的。',
+ o:[
+  {t:'推开门',       req:['will',30], ok:'门后什么都没有，只有一面墙。墙上刻着一行字："你到过这里几次？"', okE:{pts:10}},
+  {t:'贴在门上听',   req:['mind',25], ok:'里面有呼吸声。和你自己的节奏，一模一样。', okE:{pts:8}},
+  {t:'转身回去',                     ok:'你走了回去。门在你身后关上的声音很轻。', okE:{pts:2}}
+ ]}
+];
+
+/* ============================ 工具 ============================ */
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad2 = n => (n < 10 ? '0' : '') + n;
+const dstr = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+const todayStr = () => dstr(new Date());
+const parseD = s => { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+const dayDiff = (a, b) => Math.round((parseD(b) - parseD(a)) / 86400000);
+const shiftD = (s, n) => dstr(new Date(parseD(s).getTime() + n * 86400000));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+/* ============================ 状态 ============================ */
+const DEFAULT_REWARDS = [
+  {lv:'即时', cost:25,  text:'一杯奶茶 / 一集番'},
+  {lv:'周',   cost:150, text:'一顿想吃的 / 一本闲书'},
+  {lv:'半月', cost:400, text:'一件小物件'},
+  {lv:'月',   cost:900, text:'一直想买但没舍得的那件'}
+];
+
+function blankDay(date){
+  // paid：每项打卡时的实付记录（积分/精力），撤销按此回滚，不重算（防状态漂移）
+  return {date, done:TASKS.map(()=>false), evi:TASKS.map(()=>false), paid:TASKS.map(()=>null), full:false};
+}
+function newState(){
+  return {
+    version: VERSION,
+    createdAt: todayStr(),
+    attrs:{body:0, mind:0, will:0},
+    energy:0,
+    points:0,
+    streak:0,
+    freePasses:0,
+    totalFull:0,
+    totalRun:0,
+    permTraits:[],
+    lastPermDrop:null,
+    rewards: DEFAULT_REWARDS.map(r => ({...r})),
+    log:[],
+    redemptions:[],
+    sound:true,
+    pendingRun:null,
+    cur: blankDay(todayStr())
+  };
+}
+let state = newState();
+
+function save(){
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+  catch(e){ /* 隐私模式下写入失败，静默降级为内存态 */ }
+}
+function load(){
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const o = JSON.parse(raw);
+    if (!o || o.version !== VERSION) return false;
+    state = Object.assign(newState(), o);
+    state.attrs = Object.assign({body:0, mind:0, will:0}, o.attrs || {});
+    if (!state.cur || !state.cur.date) state.cur = blankDay(todayStr());
+    state.cur.done = (state.cur.done || []).concat(TASKS.map(()=>false)).slice(0, TASKS.length);
+    state.cur.evi  = (state.cur.evi  || []).concat(TASKS.map(()=>false)).slice(0, TASKS.length);
+    state.cur.paid = (state.cur.paid || []).concat(TASKS.map(()=>null)).slice(0, TASKS.length);
+    if (!state.rewards || !state.rewards.length) state.rewards = DEFAULT_REWARDS.map(r => ({...r}));
+    if (typeof state.sound !== 'boolean') state.sound = true;
+    return true;
+  } catch(e){ return false; }
+}
+
+/* ---------- 连击系数：只作用于积分（GDD 3.4 硬约束） ---------- */
+function mul(){
+  const s = state.streak;
+  return s >= 21 ? 2.0 : s >= 14 ? 1.5 : s >= 7 ? 1.2 : 1.0;
+}
+function applyMul(base){ return Math.round(base * mul()); }
+
+/* ---------- 精力：溢出 2:1 折积分（GDD 3.2） ---------- */
+function addEnergy(n){
+  const total = state.energy + n;
+  if (total <= ENERGY_MAX){ state.energy = total; return 0; }
+  const over = total - ENERGY_MAX;
+  state.energy = ENERGY_MAX;
+  const pts = Math.floor(over / 2);
+  state.points += pts;
+  return pts;
+}
+
+/* ---------- Web Audio 合成音效：零音频文件、零授权风险（hakai 做法） ---------- */
+let _ac = null;
+function sfx(kind){
+  if (!state.sound) return;
+  try {
+    if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (_ac.state === 'suspended') _ac.resume();
+    const t0 = _ac.currentTime;
+    const note = (freq, at, dur, type, vol) => {
+      const o = _ac.createOscillator(), g = _ac.createGain();
+      o.type = type || 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t0 + at);
+      g.gain.linearRampToValueAtTime(vol || 0.1, t0 + at + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+      o.connect(g); g.connect(_ac.destination);
+      o.start(t0 + at); o.stop(t0 + at + dur + 0.05);
+    };
+    if (kind === 'check'){ note(660, 0, .09); note(990, .07, .12); }
+    else if (kind === 'full'){ [523, 659, 784, 1047].forEach((f, i) => note(f, i * .09, .16, 'triangle')); }
+    else if (kind === 'settle'){ note(392, 0, .12); note(523, .1, .18); }
+  } catch(e){ /* 音频不可用则静默跳过 */ }
+}
+
+/* ---------- PWA 图标徽章：显示今日剩余任务数（App Badge API，file:// 下降级静默） ---------- */
+function updateBadge(){
+  try {
+    if (!navigator.setAppBadge) return;
+    const left = TASKS.length - state.cur.done.filter(Boolean).length;
+    if (left > 0) navigator.setAppBadge(left).catch(() => {});
+    else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+  } catch(e){ /* 不支持则跳过 */ }
+}
+
+/* ---------- 词条效果聚合 ---------- */
+function allEff(){
+  const ids = state.permTraits.concat(run ? run.temp : []);
+  return ids.map(id => TRAITS.find(t => t.id === id)).filter(Boolean).map(t => t.eff);
+}
+function traitSum(key){
+  let s = 0;
+  for (const e of allEff()){ if (e[key] != null) s += e[key]; }
+  return s;
+}
+function judgeBonus(ev, reqAttr){
+  let b = 0;
+  for (const e of allEff()){
+    if (e.judge) b += e.judge;
+    if (e.tags){ for (const t of ev.tags){ if (e.tags[t]) b += e.tags[t]; } }
+    if (e.attrJudge && reqAttr && e.attrJudge[reqAttr]) b += e.attrJudge[reqAttr];
+  }
+  return b;
+}
+function hasTrait(id){ return state.permTraits.includes(id) || (run && run.temp.includes(id)); }
+function grantTrait(t){
+  if (t.type === 'perm'){
+    if (!state.permTraits.includes(t.id)) state.permTraits.push(t.id);
+  } else if (run){
+    run.temp.push(t.id);
+  }
+}
+
+/* ============================ 日期结算 / 断链保护（GDD 4.3） ============================ */
+/* 重建期（Rebuild Protocol · hakai 对照答案）：真断链（金牌也没接住）后 3 个自然日，
+   打卡与满勤积分 ×1.5。断链不止归零，还给出一条回来的路。 */
+function rebuildLeft(){
+  if (!state.rebuild) return 0;
+  const d = dayDiff(state.rebuild.start, todayStr());
+  const left = state.rebuild.days - d;
+  return Math.max(0, left);
+}
+function handleBreak(dateStr, out){
+  if (state.freePasses > 0){
+    state.freePasses--;
+    out.push(`免死金牌用掉 1 张（${dateStr} 未满勤）· 连击保留在 ${state.streak} 天`);
+  } else if (state.streak > 0){
+    const had = state.streak;
+    out.push(`连击中断（${dateStr} 未满勤）· 归零。属性 ${state.attrs.body}/${state.attrs.mind}/${state.attrs.will} 与积分 ${state.points} 不受影响`);
+    state.streak = 0;
+    if (had >= 3){
+      state.rebuild = {start: todayStr(), days: 3};
+      out.push(`重建期启动 · 3 天内打卡积分 ×1.5`);
+    }
+  }
+}
+function settle(){
+  const out = [];
+  const t = todayStr();
+  if (!state.cur || state.cur.date === t) return out;
+
+  const old = state.cur;
+  const n = old.done.filter(Boolean).length;
+  state.log.push({date: old.date, n, full: old.full});
+  if (state.log.length > 120) state.log = state.log.slice(-120);
+  if (!old.full) handleBreak(old.date, out);
+
+  // 中间完全没打开的天数
+  const gap = dayDiff(old.date, t);
+  for (let i = 1; i < gap; i++){
+    const d = shiftD(old.date, i);
+    state.log.push({date: d, n:0, full:false});
+    handleBreak(d, out);
+  }
+  if (state.log.length > 120) state.log = state.log.slice(-120);
+
+  state.cur = blankDay(t);
+  // 重建期到期清理
+  if (state.rebuild && rebuildLeft() <= 0) state.rebuild = null;
+  return out;
+}
+
+/* ============================ 打卡（GDD 4.1） ============================ */
+function doTask(i, withEvidence){
+  if (state.cur.done[i]) return null;
+  const tk = TASKS[i];
+  state.cur.done[i] = true;
+  state.cur.evi[i] = !!withEvidence;
+
+  // 属性：唯一来源就是现实打卡（支柱 01）
+  state.attrs[tk.attr] += 1;
+
+  // 积分：基础 1，附证据 ×1.5（GDD 4.1.1）；重建期内再 ×1.5
+  const rb = rebuildLeft() > 0 ? 1.5 : 1;
+  const base = withEvidence ? Math.round(1 * 1.5) : 1;
+  const gain = Math.round(applyMul(base) * rb);
+  state.points += gain;
+
+  const ov = addEnergy(1);
+  // 实付记账：撤销按此回滚（溢出折算积分一并记入）
+  state.cur.paid[i] = {pts: gain + (ov || 0), energy: 1};
+  const lines = [`积分 +${gain}`, `${ATTR_NAME[tk.attr]} +1`, '精力 +1'];
+  if (ov) lines.push(`精力溢出折算 积分 +${ov}`);
+
+  const n = state.cur.done.filter(Boolean).length;
+  if (n === TASKS.length){
+    sfx('full');
+    state.cur.full = true;
+    state.totalFull++;
+    state.streak++;
+    const bE = addEnergy(1);
+    const bP = Math.round(applyMul(5) * rb);
+    state.points += bP;
+    lines.push(`满勤达成 积分 +${bP}`, '精力 +1');
+    if (bE) lines.push(`精力溢出折算 积分 +${bE}`);
+
+    // 每连续 7 天全勤赠 1 张免死金牌
+    if (state.streak % 7 === 0 && state.freePasses < FREE_PASS_MAX){
+      state.freePasses++;
+      lines.push('免死金牌 +1');
+    }
+    // 里程碑：首次连击 7 天赠 1 个永久词条（对应 GDD 6.2 第一个解锁点）
+    if (state.streak === 7){
+      const pool = TRAITS.filter(t => t.type === 'perm' && !state.permTraits.includes(t.id));
+      if (pool.length){
+        const got = pick(pool);
+        grantTrait(got);
+        lines.push(`永久词条「${got.name}」`);
+      }
+    }
+  }
+  sfx('check');
+  save();
+  render();
+  return {lines, attr: tk.attr};
+}
+
+/* ---------- 撤销打卡（the-forge 心法：误触可纠正）----------
+   规则：当日未满勤才可撤销；满勤结算（连击/加成/金牌/词条）不可回滚，防刷。
+   回滚按 doTask 记录的实付执行，不重算——倍率/重建期状态可能已变化，重算会漂移。 */
+function undoTask(i){
+  if (state.cur.full){ toast('今日已满勤结算，不可撤销（防刷）'); return; }
+  const p = state.cur.paid[i];
+  if (!p){ toast('该项没有可撤销的记录'); return; }
+  state.points = Math.max(0, state.points - p.pts);
+  state.energy = Math.max(0, state.energy - p.energy);
+  state.attrs[TASKS[i].attr] = Math.max(0, state.attrs[TASKS[i].attr] - 1);
+  state.cur.done[i] = false;
+  state.cur.evi[i] = false;
+  state.cur.paid[i] = null;
+  save();
+  render();
+  toast(`已撤销「${TASKS[i].name}」· 积分 -${p.pts}`);
+}
+
+/* ============================ run 逻辑（GDD 5） ============================ */
+let run = null;
+let selEnt = 'bus';
+
+function unlockedEv(ev){
+  if (!ev.unlock) return true;
+  return state.attrs[ev.unlock[0]] >= ev.unlock[1];
+}
+function evWeight(ev, tags){
+  let w = ev.w || 1;
+  if (ev.tags.some(t => tags.includes(t))) w *= 3;
+  return w;
+}
+function drawEvent(pool, used, tags){
+  let cand = pool.filter(e => !used.has(e.id));
+  if (!cand.length){ used.clear(); cand = pool.slice(); }
+  const total = cand.reduce((a, e) => a + evWeight(e, tags), 0);
+  let r = Math.random() * total;
+  for (const e of cand){
+    r -= evWeight(e, tags);
+    if (r <= 0){ used.add(e.id); return e; }
+  }
+  used.add(cand[0].id);
+  return cand[0];
+}
+function buildSeq(ent){
+  const normals = EVENTS.filter(e => !e.anchor && unlockedEv(e));
+  const anchors = EVENTS.filter(e => e.anchor && !e.deep);
+  const used = new Set();
+  const seq = [];
+  for (let i = 0; i < RUN_NODES; i++){
+    if (i + 1 === ANCHOR_AT){ seq.push(pick(anchors)); continue; }
+    seq.push(drawEvent(normals, used, ent.tg));
+  }
+  return seq;
+}
+function startRun(){
+  if (state.energy < RUN_COST){ toast('精力不足'); return; }
+  if (run) return;
+  const ent = ENTRANCES.find(e => e.id === selEnt) || ENTRANCES[0];
+  run = null;
+  const initFocusMod = traitSum('initFocus');   // 只累计永久词条（临时词条此时尚未获得）
+  addEnergy(-RUN_COST);
+  state.pendingRun = {at: Date.now(), cost: RUN_COST};
+  const base = Math.max(3, Math.min(FOCUS_MAX, FOCUS_BASE + Math.floor(state.attrs.will / 10) + initFocusMod));
+  run = {
+    ent, focus: base, maxFocus: base,
+    temp: [], node: 0, passed: 0,
+    seq: buildSeq(ent),
+    traitPicked: false, offered: false, deep: false,
+    mode: 'node', pending: null, result: null
+  };
+  save();
+  openModal();
+  renderRun();
+}
+function judgeOpt(ev, opt){
+  const bonus = judgeBonus(ev, opt.req ? opt.req[0] : null);
+  if (!opt.req) return {pass:true, noReq:true, bonus};
+  const attr = opt.req[0], val = opt.req[1];
+  const eff = state.attrs[attr] + bonus;
+  if (eff >= val) return {pass:true, safe:true, eff, val, bonus};
+  const p = Math.max(0.05, Math.min(0.95, eff / val));
+  return {pass: Math.random() < p, gamble:true, eff, val, bonus, p};
+}
+function chooseOption(oi){
+  const ev = run.seq[run.node];
+  const opt = ev.o[oi];
+  const j = judgeOpt(ev, opt);
+  const e = opt.okE || {};
+  const gains = [];
+  let kind, text;
+
+  if (j.pass){
+    kind = 'good';
+    text = opt.ok;
+    if (e.pts){ const g = applyMul(e.pts); state.points += g; gains.push({c:'p', t:`积分 +${g}`}); }
+    if (e.focus){
+      const before = run.focus;
+      run.focus = Math.min(run.maxFocus, run.focus + e.focus);
+      if (run.focus !== before) gains.push({c:'f', t:`定力 ${e.focus > 0 ? '+' : ''}${run.focus - before}`});
+    }
+    const sp = traitSum('successPoints');
+    if (sp){ state.points += sp; gains.push({c:'p', t:`手快 积分 +${sp}`}); }
+  } else {
+    kind = 'bad';
+    text = opt.no || '你做了一个动作，但没有改变任何事。空气里有什么东西轻轻挪了一下位置。';
+    let cost = j.gamble ? OVERLEVEL_COST : FAIL_COST;
+    cost = Math.max(0, cost - traitSum('dmgReduce'));
+    run.focus -= cost;
+    gains.push({c:'f', t:`定力 -${cost}`});
+    if (j.gamble) gains.push({c:'f', t:`越级失败（${ATTR_NAME[opt.req[0]]} ${j.eff} / 门槛 ${j.val}）`});
+  }
+
+  // 执念：每通过 1 节点 +1 积分
+  const np = traitSum('nodePoints');
+  if (np){ state.points += np; gains.push({c:'p', t:`执念 积分 +${np}`}); }
+
+  run.node++;
+  run.passed = run.node;
+  run.lastPass = j.pass;          // 深层那一节是否判定成功，决定结算走 deep 还是 clear
+  run.pending = {text, kind, gains};
+  run.mode = 'outcome';
+  save();
+  renderRun();
+}
+function nextStep(){
+  run.pending = null;
+  if (run.focus <= 0){ return endRun('dead'); }
+  if (run.node === TRAIT_PICK_AFTER && !run.traitPicked){ run.mode = 'trait'; return renderRun(); }
+  if (run.node >= run.seq.length){
+    if (!run.offered){ run.offered = true; run.mode = 'deep'; return renderRun(); }
+    // 深处那一节判定失败 = 只算普通通关，拿不到深层收益（GDD 5.5）
+    return endRun(run.deep && run.lastPass ? 'deep' : 'clear');
+  }
+  run.mode = 'node';
+  renderRun();
+}
+function endRun(kind){
+  const cleared = run.seq.length;
+  let base = kind === 'dead' ? run.passed * 2 : cleared * 2 + (kind === 'deep' ? 20 : 10);
+  base += traitSum('settleAdd');
+  base += run.passed * traitSum('nodePoints');
+  base = Math.round(base * (1 + traitSum('settleMul')));
+  const pts = applyMul(base);
+  state.points += pts;
+
+  let drop = null, dropRolled = false;
+  if (kind === 'deep'){
+    const today = todayStr();
+    // 掉落防刷（Shadow Caches 思路）：永久词条掉落每天只掷 1 次，重复 deep 不再 roll
+    if (state.lastPermDrop === today){
+      dropRolled = true;                     // 今天已经掷过，本轮不 roll
+    } else {
+      state.lastPermDrop = today;
+      dropRolled = true;
+      if (Math.random() < 0.15){
+        const pool = TRAITS.filter(t => t.type === 'perm' && !state.permTraits.includes(t.id));
+        if (pool.length){ drop = pick(pool); grantTrait(drop); }
+      }
+    }
+  }
+  state.pendingRun = null;
+  state.totalRun++;
+  sfx('settle');
+  run.result = {kind, base, pts, drop, dropRolled, passed: run.passed, total: cleared, traits: run.temp.slice()};
+  run.mode = 'result';
+  save();
+  renderRun();
+}
+function closeRun(){
+  run = null;
+  closeModal();
+  render();
+}
+
+/* ============================ 渲染 ============================ */
+let curView = 'day';
+
+function renderHeader(){
+  const d = new Date();
+  const wd = ['日','一','二','三','四','五','六'][d.getDay()];
+  $('#hdDate').textContent = `${d.getMonth() + 1}月${d.getDate()}日 周${wd}`;
+  const m = mul();
+  $('#hdStreak').innerHTML = state.streak > 0
+    ? `连击 <b>${state.streak}</b> 天<span class="mul">×${m.toFixed(1)}</span>`
+    : `连击 <b>0</b> 天<span class="mul">×1.0</span>`;
+  $('#hdEnergy').innerHTML = `${state.energy}<span class="sub">/${ENERGY_MAX}</span>`;
+  $('#hdPoints').textContent = state.points;
+}
+
+function renderDay(){
+  const c = state.cur;
+  const doneN = c.done.filter(Boolean).length;
+  const leftN = TASKS.length - doneN;
+  const leftMin = TASKS.reduce((a, tk, i) => a + (c.done[i] ? 0 : (tk.min || 0)), 0);
+  let h = '';
+  h += `<div class="daily-line">${esc(dailyLine())}</div>`;
+  h += TASKS.map((tk, i) => {
+    const on = c.done[i];
+    return `<div class="task ${on ? 'done' : ''}" data-act="task" data-i="${i}" style="--c:var(${ATTR_VAR[tk.attr]})">
+      <div class="t-idx">${on ? '✓' : i + 1}</div>
+      <div class="t-mid">
+        <div class="t-name">${esc(tk.name)}</div>
+        <div class="t-meta">${esc(tk.time)} · <span class="at">${ATTR_NAME[tk.attr]} +1</span> · 精力 +1 · 积分 +1</div>
+      </div>
+      <button class="t-evi ${c.evi[i] ? 'on' : ''}" data-act="evi" data-i="${i}" title="附证据：该项积分 ×1.5" aria-label="附证据"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3l2-3h8l2 3h3v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+      ${on ? `<button class="t-evi undo" data-act="undo" data-i="${i}" title="撤销今日该项（满勤后不可撤销）" aria-label="撤销"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>` : ''}
+      <div class="t-check">✓</div>
+    </div>`;
+  }).join('');
+
+  h += `<div class="daybar">
+    <div class="lbl"><span>今日 ${doneN}/${TASKS.length}</span><span>${doneN === TASKS.length ? '满勤达成 · 精力 +1 积分 +5' : `剩 ${leftN} 项 · 约 ${leftMin} 分钟`}</span></div>
+    <div class="track"><i style="width:${doneN / TASKS.length * 100}%"></i></div>
+  </div>`;
+
+  /* Proximity Scan：离你最近的 3 个解锁项（跨属性按差距排序） */
+  const prox = UNLOCKS
+    .map(u => ({...u, gap: u.val - state.attrs[u.attr]}))
+    .filter(u => u.gap > 0)
+    .sort((a, b) => a.gap - b.gap)
+    .slice(0, 3);
+  if (prox.length){
+    h += `<div class="sec-title">离你最近的三扇门</div><div class="prox">`;
+    h += prox.map(u => `<div class="prox-item">
+      <div class="px-a" style="color:var(${ATTR_VAR[u.attr]})">${ATTR_NAME[u.attr]} · ${u.attr === 'body' ? '行动' : u.attr === 'mind' ? '洞察' : '抗压'}</div>
+      <div class="px-n">${esc(u.name)}</div>
+      <div class="px-d" style="color:var(${ATTR_VAR[u.attr]})">${u.gap}<small> 点即达</small></div>
+    </div>`).join('');
+    h += `</div>`;
+  }
+
+  const rbl = rebuildLeft();
+  if (rbl > 0){
+    h += `<div class="rebuild-banner">重建期 · 剩余 <b>${rbl}</b> 天 — 这段时间打卡积分 ×1.5。回来的路比看上去短。</div>`;
+  }
+
+  h += `<div class="note">免死金牌 <b style="color:var(--amber)">${state.freePasses}</b>/${FREE_PASS_MAX}　·　每连续 7 天全勤赠送 1 张；未满勤当天自动消耗 1 张，连击不清零。<br>连续满勤第 7 天起积分倍率 ×1.2 → 第 14 天 ×1.5 → 第 21 天 ×2.0。</div>`;
+
+  const cnt = c.done.filter(Boolean).length;
+  if (cnt > 0 && cnt < TASKS.length){
+    h += `<div class="hr"></div><div class="note">今日已获 ${cnt} 点精力。精力上限 ${ENERGY_MAX}，溢出的部分按 2:1 折算成积分——满了不花就是浪费。</div>`;
+  }
+
+  $('#v-day').innerHTML = h;
+}
+
+function renderRunTab(){
+  let h = '';
+  h += `<div class="sec-title">精力</div>
+  <div class="attr-card">
+    <div class="attr-hd">
+      <div class="attr-nm">当前精力<span class="d">每次冒险消耗 ${RUN_COST} 点</span></div>
+      <div class="attr-v" style="color:#7fc8dd">${state.energy}<span style="font-size:13px;color:var(--dim2)">/${ENERGY_MAX}</span></div>
+    </div>
+    <div class="track"><i style="width:${state.energy / ENERGY_MAX * 100}%;background:linear-gradient(90deg,#3d6b7d,#7fc8dd)"></i></div>
+    <div class="attr-next">精力只由打卡产出。溢出的精力按 2:1 折算成积分。</div>
+  </div>`;
+
+  h += `<div class="sec-title">选择入口</div>`;
+  h += ENTRANCES.map(e => `<div class="ent ${selEnt === e.id ? 'sel' : ''}" data-act="ent" data-id="${e.id}">
+    <div class="ic">${e.ic}</div>
+    <div><div class="nm">${esc(e.name)}</div><div class="ds">${esc(e.desc)}</div><div class="tg">${e.tg.join(' · ')}</div></div>
+  </div>`).join('');
+
+  const lack = state.energy < RUN_COST;
+  h += `<button class="btn primary" data-act="start" ${lack ? 'disabled' : ''}>${lack ? `精力不足（需 ${RUN_COST} 点）` : `进入冒险 · 消耗 ${RUN_COST} 精力`}</button>`;
+
+  h += `<div class="sec-title">记录</div>
+  <div class="stats">
+    <div class="stat"><div class="k">总冒险次数</div><div class="v">${state.totalRun}</div></div>
+    <div class="stat"><div class="k">累计满勤天数</div><div class="v">${state.totalFull}</div></div>
+  </div>`;
+
+  if (state.log.length){
+    const last = state.log.slice(-7).reverse();
+    h += `<div class="sec-title">最近 7 天</div>`;
+    h += last.map(l => {
+      const p = Math.round(l.n / TASKS.length * 7);
+      return `<div class="ul-item"><span class="nm">${l.date}</span><span class="req">${'●'.repeat(p)}${'○'.repeat(7 - p)}</span><span class="ok" style="color:${l.full ? 'var(--ok)' : 'var(--dim2)'}">${l.n}/7</span></div>`;
+    }).join('');
+  }
+
+  $('#v-run').innerHTML = h;
+}
+
+function renderAttr(){
+  let h = '';
+  ['body', 'mind', 'will'].forEach(a => {
+    const v = state.attrs[a];
+    const col = `var(${ATTR_VAR[a]})`;
+    const nextU = UNLOCKS.filter(u => u.attr === a && u.val > v).sort((x, y) => x.val - y.val)[0];
+    const prevU = UNLOCKS.filter(u => u.attr === a && u.val <= v).sort((x, y) => y.val - x.val)[0];
+    const from = prevU ? prevU.val : 0;
+    const pct = nextU ? Math.max(2, Math.min(100, (v - from) / (nextU.val - from) * 100)) : 100;
+    h += `<div class="attr-card">
+      <div class="attr-hd">
+        <div class="attr-nm">${ATTR_NAME[a]}<span class="d">${ATTR_DESC[a]}</span></div>
+        <div class="attr-v" style="color:${col}">${v}</div>
+      </div>
+      <div class="track"><i style="width:${pct}%;background:${col}"></i></div>
+      <div class="attr-next ${nextU ? '' : 'locked'}">${nextU ? `距「${nextU.name}」还差 <b style="color:${col}">${nextU.val - v}</b> 点` : '已解锁该属性的全部内容'}</div>
+    </div>`;
+  });
+
+  h += `<div class="sec-title">解锁进度</div>`;
+  h += UNLOCKS.map(u => {
+    const ok = state.attrs[u.attr] >= u.val;
+    const wn = u.kind === 'world' ? ' <span style="color:var(--dim2);font-size:11px">（内容开发中）</span>' : '';
+    return `<div class="ul-item ${ok ? '' : 'lock'}">
+      <span style="color:var(${ATTR_VAR[u.attr]});font-weight:600">${ATTR_NAME[u.attr]}</span>
+      <span class="nm">${esc(u.name)}${wn}</span>
+      <span class="req">${u.val}</span>
+      <span class="ok" style="color:${ok ? 'var(--ok)' : 'var(--dim2)'}">${ok ? '✓' : '—'}</span>
+    </div>`;
+  }).join('');
+
+  const perms = state.permTraits.map(id => TRAITS.find(t => t.id === id)).filter(Boolean);
+  const allPerm = TRAITS.filter(t => t.type === 'perm');
+  h += `<div class="sec-title">永久词条 ${perms.length}/${allPerm.length}</div>`;
+  if (!perms.length){
+    h += `<div class="empty">还没有永久词条。<br>首次连击满 7 天赠送 1 个 · 深层通关 15% 概率掉落</div>`;
+  } else {
+    h += `<div style="margin:2px 0 8px">${perms.map(t => `<span class="trait perm">${esc(t.name)}</span>`).join('')}</div>`;
+    h += perms.map(t => `<div class="ul-item"><span class="nm">${esc(t.name)} — <span style="color:var(--dim)">${esc(t.desc)}</span></span></div>`).join('');
+  }
+
+  const allTmp = TRAITS.filter(t => t.type === 'tmp');
+  h += `<div class="sec-title">临时词条池 ${allTmp.length}</div>`;
+  h += `<div style="margin:2px 0 8px">${allTmp.map(t => `<span class="trait tmp" title="${esc(t.desc)}">${esc(t.name)}</span>`).join('')}</div>`;
+  h += `<div class="note">临时词条只在单次冒险内生效，局末清空。冒险途中每局有一次三选一的机会。</div>`;
+
+  $('#v-attr').innerHTML = h;
+}
+
+function renderShop(){
+  let h = '';
+  h += `<div class="sec-title">积分余额</div>
+  <div class="attr-card">
+    <div class="attr-hd">
+      <div class="attr-nm">可兑换积分</div>
+      <div class="attr-v" style="color:var(--amber)">${state.points}</div>
+    </div>
+    <div class="attr-next">积分是钱包，消费不清零。打卡与冒险产出，只在兑换时消耗。</div>
+  </div>`;
+
+  h += `<div class="sec-title">兑换清单</div>`;
+  h += state.rewards.map((r, i) => {
+    const can = state.points >= r.cost;
+    return `<div class="tier">
+      <div class="lv"><div class="n">${r.cost}</div><div class="u">积分</div></div>
+      <div class="bd">
+        <div class="tx" data-act="editReward" data-i="${i}">${esc(r.text) || '<span style="color:var(--dim2)">点击填写</span>'}</div>
+        <div class="sub">${esc(r.lv)}档　·　${can ? '可兑换' : '还差 ' + (r.cost - state.points) + ' 分'}</div>
+      </div>
+      <div class="act"><button data-act="redm" data-i="${i}" ${can ? '' : 'disabled'}>兑换</button></div>
+    </div>`;
+  }).join('');
+  h += `<div class="note">清单内容必须由你自己填写。<b style="color:var(--amber)">别人指定的奖励，大脑不认账。</b><br>约束：24 小时内能买到 · 不是伪装成奖励的任务。</div>`;
+
+  if (state.redemptions.length){
+    h += `<div class="sec-title">兑换记录</div>`;
+    h += state.redemptions.slice(-8).reverse().map(r =>
+      `<div class="ul-item"><span class="nm">${esc(r.text)}</span><span class="req">-${r.cost}</span><span class="ok" style="color:var(--dim2);font-size:11.5px">${r.date}</span></div>`
+    ).join('');
+  }
+
+  h += `<div class="sec-title">数据</div>
+  <div class="row2">
+    <button class="btn sm ghost" data-act="sound">${state.sound ? '🔊 音效：开' : '🔇 音效：关'}</button>
+    <button class="btn sm ghost" data-act="export">导出数据</button>
+  </div>
+  <div class="row2" style="margin-top:9px">
+    <button class="btn sm ghost" data-act="import">导入数据</button>
+    <button class="btn sm ghost" style="visibility:hidden" aria-hidden="true">占位</button>
+  </div>
+  <div class="note">记录保存在本机浏览器，不联网、不上传。清除浏览器缓存会丢失数据，建议定期导出备份。</div>
+  <div class="hr"></div>
+  <button class="btn sm ghost" data-act="reset" style="color:var(--bad);border-color:#3a2422">清空全部记录</button>
+  <div class="note" style="text-align:center;color:var(--dim2)">《日课》v1.0 · 设计依据 GDD v0.2</div>`;
+
+  $('#v-shop').innerHTML = h;
+}
+
+function render(){
+  renderHeader();
+  if (curView === 'day') renderDay();
+  else if (curView === 'run') renderRunTab();
+  else if (curView === 'attr') renderAttr();
+  else if (curView === 'shop') renderShop();
+  updateBadge();
+}
+
+/* ============================ run 渲染 ============================ */
+function openModal(){ $('#modal').classList.add('on'); document.body.style.overflow = 'hidden'; }
+function closeModal(){ $('#modal').classList.remove('on'); document.body.style.overflow = ''; }
+
+function renderRun(){
+  if (!run) return;
+  const r = run;
+  const low = r.focus <= Math.ceil(r.maxFocus * 0.34);
+  $('#mHdr').innerHTML = `
+    <div class="mid">
+      <div class="focus-row">
+        <span style="flex:0 0 auto">定力</span>
+        <div class="focus-bar ${low ? 'low' : ''}"><i style="width:${Math.max(0, r.focus / r.maxFocus * 100)}%"></i></div>
+        <span style="flex:0 0 auto;font-variant-numeric:tabular-nums;color:${low ? 'var(--bad)' : 'var(--dim)'}">${Math.max(0, r.focus)}/${r.maxFocus}</span>
+      </div>
+    </div>
+    <div style="flex:0 0 auto;font-size:11.5px;color:var(--dim2);text-align:right;line-height:1.45">
+      ${r.mode === 'result' ? '结算' : `第 ${Math.min(r.node + 1, r.seq.length)}/${r.seq.length} 节`}<br>${esc(r.ent.name)}
+    </div>`;
+
+  if (r.mode === 'result') return renderResult();
+  if (r.mode === 'outcome') return renderOutcome();
+  if (r.mode === 'trait') return renderTraitPick();
+  if (r.mode === 'deep') return renderDeepOffer();
+  return renderNode();
+}
+
+function traitBar(){
+  if (!run.temp.length) return '';
+  return `<div style="margin-bottom:14px">${run.temp.map(id => {
+    const t = TRAITS.find(x => x.id === id);
+    return `<span class="trait tmp" title="${esc(t.desc)}">${esc(t.name)}</span>`;
+  }).join('')}</div>`;
+}
+
+function renderNode(){
+  const r = run;
+  const ev = r.seq[r.node];
+  let h = traitBar();
+  h += `<div class="ev-tagline">${ev.anchor ? '锚 · ' : ''}${ev.tags.filter(t => t !== 'anchor').join(' / ').toUpperCase()}</div>`;
+  h += `<div class="ev-title">${esc(ev.title)}</div>`;
+  h += `<div class="ev-text serif">${esc(ev.t)}</div>`;
+
+  ev.o.forEach((o, i) => {
+    let rq = '';
+    if (!o.req){
+      rq = o.okE && o.okE.focus < 0 ? '<span class="rq cost">保底路径 · 定力 ' + o.okE.focus + '</span>' : '<span class="rq">保底路径 · 必定成功</span>';
+    } else {
+      const j = judgeOpt(ev, o);
+      const nm = ATTR_NAME[o.req[0]];
+      if (j.safe) rq = `<span class="rq pass">门槛 ${nm} ${o.req[1]} · 已达成（必定成功）</span>`;
+      else rq = `<span class="rq gamble">门槛 ${nm} ${o.req[1]} · 越级尝试 · 成功率 ${Math.round(j.p * 100)}% · 失败扣 ${OVERLEVEL_COST} 定力</span>`;
+    }
+    h += `<button class="opt" data-act="opt" data-i="${i}">${esc(o.t)}${rq}</button>`;
+  });
+
+  $('#mBody').innerHTML = h;
+}
+
+function renderOutcome(){
+  const p = run.pending;
+  const ev = run.seq[run.node - 1];
+  let h = `<div class="ev-tagline">${esc(ev.title)}</div>`;
+  h += `<div class="res-box ${p.kind}"><div class="tx serif">${esc(p.text)}</div></div>`;
+  if (p.gains && p.gains.length){
+    h += `<div class="gain">${p.gains.map(g => `<span class="${g.c}">${esc(g.t)}</span>`).join('')}</div>`;
+  }
+  if (run.focus <= 0){
+    h += `<div class="note" style="color:var(--bad);margin-bottom:14px">定力归零。冒险在此结束——这是正常分支，不是惩罚。已积累的属性与积分不受影响。</div>`;
+  }
+  h += traitBar();
+  h += `<button class="btn primary" data-act="cont">${run.focus <= 0 ? '查看结算' : '继续'}</button>`;
+  $('#mBody').innerHTML = h;
+}
+
+function renderTraitPick(){
+  if (!run._offer){
+    const pool = TRAITS.filter(t => t.type === 'tmp' && !run.temp.includes(t.id));
+    const cp = pool.slice();
+    const got = [];
+    while (got.length < 3 && cp.length){ got.push(cp.splice(Math.floor(Math.random() * cp.length), 1)[0]); }
+    run._offer = got.map(t => t.id);
+  }
+  const got = run._offer.map(id => TRAITS.find(t => t.id === id)).filter(Boolean);
+  let h = `<div class="ev-tagline">途 中</div>
+    <div class="ev-title">拾得</div>
+    <div class="ev-text serif">你在路边的积水里看见三样东西的倒影，但只来得及捞起一件。它们在你手里都是温的。</div>`;
+  h += got.map(t => `<div class="pick-card" data-act="trait" data-id="${t.id}">
+    <div class="nm">${esc(t.name)}</div>
+    <div class="ds">${esc(t.desc)}</div>
+    <div class="ty">临时 · 本次冒险结束后消失</div>
+  </div>`).join('');
+  $('#mBody').innerHTML = h;
+}
+
+function renderDeepOffer(){
+  const n = run.seq.length;
+  let h = `<div class="ev-tagline">深 处</div>
+    <div class="ev-title">还要往里走吗</div>
+    <div class="ev-text serif">你已经走完了这条路的全部。但尽头还有一扇门，门缝里有光，光是冷的。<br><br>你的定力还剩 <em>${run.focus}</em> 点。</div>`;
+  h += `<div class="gain">
+    <span class="f">收手 · 基础 ${n * 2 + 10} 分</span>
+    <span class="p">深入成功 · 基础 ${(n + 1) * 2 + 20} 分 + 15% 掉落永久词条</span>
+    <span class="f">深入失败 · 退为普通通关，基础 ${n * 2 + 10} 分，无掉落</span>
+    <span class="f">定力归零 · 只结算已通过节点 × 2</span>
+  </div>`;
+  h += `<button class="btn primary" data-act="deep" data-v="1" style="margin-bottom:9px">推门进去</button>`;
+  h += `<button class="btn ghost" data-act="deep" data-v="0">就此收手</button>`;
+  $('#mBody').innerHTML = h;
+}
+
+function renderResult(){
+  const r = run.result;
+  const title = r.kind === 'dead' ? '定力归零' : r.kind === 'deep' ? '深层通关' : '通关';
+  const note = r.kind === 'dead'
+    ? '冒险在此结束。已积累的属性、积分、词条全部保留——失败只损失本次的潜在收益。'
+    : r.kind === 'deep' ? '你走到了这条路的最里面。' : '你走完了这条路。';
+  let h = `<div class="ev-tagline">结 算</div>
+    <div class="ev-title">${title}</div>
+    <div class="ev-text serif">${note}</div>`;
+  h += `<div class="gain">
+    <span class="f">通过节点 ${r.passed}/${r.total}</span>
+    <span class="p">基础积分 ${r.base}</span>
+    <span class="p">连击倍率 ×${mul().toFixed(1)}</span>
+    <span class="p">实得积分 +${r.pts}</span>
+  </div>`;
+  if (r.drop){
+    h += `<div class="res-box good"><div class="tx serif">门后的墙上嵌着一样东西。你把它取了下来——「${esc(r.drop.name)}」：${esc(r.drop.desc)}</div></div>`;
+    h += `<div class="gain"><span class="p">永久词条 · ${esc(r.drop.name)}</span></div>`;
+  } else if (r.kind === 'deep' && r.dropRolled){
+    h += `<div class="gain"><span class="f">今日的深层掉落已掷过 · 明日再来</span></div>`;
+  }
+  if (r.traits.length){
+    h += `<div class="gain"><span class="f">本次临时词条已清空：${r.traits.map(id => esc((TRAITS.find(t => t.id === id) || {}).name || '')).join(' · ')}</span></div>`;
+  }
+  h += `<div class="attr-card" style="margin-top:6px">
+    <div class="attr-hd"><div class="attr-nm">当前积分</div><div class="attr-v" style="color:var(--amber)">${state.points}</div></div>
+    <div class="attr-next">精力剩余 ${state.energy}/${ENERGY_MAX}　·　连击 ${state.streak} 天</div>
+  </div>`;
+  h += `<button class="btn primary" data-act="close">返回</button>`;
+  $('#mBody').innerHTML = h;
+}
+
+/* ============================ 弹层：导出 / 导入 ============================ */
+function setModalTitle(txt){
+  $('#mHdr').innerHTML = `<div class="mid" style="font-size:15px;font-weight:600">${esc(txt)}</div>`;
+}
+function showExport(){
+  const json = JSON.stringify(state);
+  setModalTitle('数据 · 导出');
+  let h = `<div class="ev-tagline">备 份</div><div class="ev-title">导出数据</div>
+    <div class="ev-text serif" style="font-size:14px">下面这段文本就是你的全部记录。复制它，保存到任何地方（备忘录、微信文件传输助手、邮箱）。</div>
+    <textarea class="f" id="expArea" rows="9" readonly>${esc(json)}</textarea>
+    <div class="note">共 ${json.length} 字符</div>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn sm primary" data-act="copy">复制全文</button>
+      <button class="btn sm ghost" data-act="close">关闭</button>
+    </div>`;
+  $('#mBody').innerHTML = h;
+  openModal();
+}
+function showImport(){
+  setModalTitle('数据 · 导入');
+  let h = `<div class="ev-tagline">恢 复</div><div class="ev-title">导入数据</div>
+    <div class="ev-text serif" style="font-size:14px">把之前导出的文本粘贴到这里。<b style="color:var(--bad)">这会覆盖当前全部记录。</b></div>
+    <textarea class="f" id="impArea" rows="9" placeholder="粘贴 JSON 文本"></textarea>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn sm primary" data-act="doImport">确认覆盖导入</button>
+      <button class="btn sm ghost" data-act="close">取消</button>
+    </div>`;
+  $('#mBody').innerHTML = h;
+  openModal();
+}
+
+/* ============================ 反馈 ============================ */
+function toast(msg){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('on'), 2400);
+}
+function floatText(msg, color){
+  const el = document.createElement('div');
+  el.className = 'float';
+  el.textContent = msg;
+  if (color) el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
+
+/* ============================ 事件绑定 ============================ */
+function bind(){
+  $('#tabs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-v]');
+    if (!b) return;
+    curView = b.dataset.v;
+    $$('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+    $$('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + curView));
+    render();
+  });
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-act]');
+    if (!el) return;
+    const act = el.dataset.act;
+
+    if (act === 'evi'){
+      e.stopPropagation();
+      const i = +el.dataset.i;
+      if (state.cur.done[i]) { toast('该项已打卡，证据加成不可事后补加'); return; }
+      state.cur.evi[i] = !state.cur.evi[i];
+      save(); render();
+      return;
+    }
+
+    if (act === 'undo'){
+      e.stopPropagation();
+      undoTask(+el.dataset.i);
+      return;
+    }
+
+    if (act === 'task'){
+      const i = +el.dataset.i;
+      if (state.cur.done[i]) { toast('今天已经打过这一项'); return; }
+      const res = doTask(i, state.cur.evi[i]);
+      if (res) floatText(res.lines.join('　'), 'var(' + ATTR_VAR[res.attr] + ')');
+      return;
+    }
+
+    if (act === 'ent'){ selEnt = el.dataset.id; renderRunTab(); return; }
+    if (act === 'start'){ startRun(); return; }
+
+    if (act === 'opt'){ chooseOption(+el.dataset.i); return; }
+    if (act === 'cont'){ nextStep(); return; }
+
+    if (act === 'trait'){
+      const t = TRAITS.find(x => x.id === el.dataset.id);
+      if (t){ grantTrait(t); toast('获得临时词条「' + t.name + '」'); }
+      run.traitPicked = true;
+      run._offer = null;
+      run.mode = 'node';
+      save();
+      renderRun();
+      return;
+    }
+
+    if (act === 'deep'){
+      if (el.dataset.v === '1'){
+        run.deep = true;
+        run.seq.push(EVENTS.find(x => x.deep));
+        run.mode = 'node';
+        renderRun();
+      } else {
+        endRun('clear');
+      }
+      return;
+    }
+
+    if (act === 'close'){ if (run) closeRun(); else closeModal(); return; }
+
+    if (act === 'redm'){
+      const r = state.rewards[+el.dataset.i];
+      if (!r || state.points < r.cost) return;
+      if (!confirm(`确认兑换「${r.text}」？\n将消耗 ${r.cost} 积分。`)) return;
+      state.points -= r.cost;
+      state.redemptions.push({text:r.text, cost:r.cost, date:todayStr()});
+      save(); render();
+      floatText('已兑换 ' + r.text, 'var(--amber)');
+      return;
+    }
+
+    if (act === 'editReward'){
+      const i = +el.dataset.i;
+      const r = state.rewards[i];
+      const v = prompt('这一档想要什么？（必须是 24 小时内能买到、且你真心想要的）', r.text || '');
+      if (v === null) return;
+      r.text = v.trim();
+      save(); render();
+      return;
+    }
+
+    if (act === 'sound'){
+      state.sound = !state.sound;
+      save(); render();
+      if (state.sound) sfx('check');
+      return;
+    }
+    if (act === 'export'){ showExport(); return; }
+    if (act === 'import'){ showImport(); return; }
+
+    if (act === 'copy'){
+      const ta = $('#expArea');
+      ta.select();
+      ta.setSelectionRange(0, 999999);
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch(err){ ok = false; }
+      if (navigator.clipboard && !ok){
+        navigator.clipboard.writeText(ta.value).then(() => toast('已复制')).catch(() => toast('请长按文本框手动复制'));
+        return;
+      }
+      toast(ok ? '已复制' : '请长按文本框手动复制');
+      return;
+    }
+
+    if (act === 'doImport'){
+      const txt = $('#impArea').value.trim();
+      if (!txt){ toast('没有内容'); return; }
+      try {
+        const o = JSON.parse(txt);
+        if (!o || typeof o !== 'object' || !o.attrs) throw new Error('格式不对');
+        if (!confirm('确认覆盖？当前记录将被替换，且无法撤销。')) return;
+        localStorage.setItem(SAVE_KEY, JSON.stringify(Object.assign(newState(), o)));
+        location.reload();
+      } catch(err){ toast('导入失败：文本不是有效的备份数据'); }
+      return;
+    }
+
+    if (act === 'reset'){
+      if (!confirm('这会删除全部打卡记录、属性、积分、词条。确定吗？')) return;
+      if (!confirm('再确认一次：删除后无法恢复。建议先导出备份。')) return;
+      try { localStorage.removeItem(SAVE_KEY); } catch(err){}
+      location.reload();
+      return;
+    }
+  });
+}
+
+/* ============================ 启动 ============================ */
+function boot(){
+  const had = load();
+  if (!had){ save(); }
+
+  // 上次冒险未结算就退出 → 退还精力（不算失败，也不给收益）
+  if (state.pendingRun){
+    addEnergy(state.pendingRun.cost || RUN_COST);
+    state.pendingRun = null;
+    toast('上次冒险未完成，精力已退还');
+  }
+
+  const notices = settle();
+  save();
+  bind();
+  render();
+
+  if (notices.length){
+    setTimeout(() => {
+      const ok = notices.slice(0, 2).join('　');
+      toast('离线期间：' + ok);
+    }, 700);
+  }
+
+  // 服务端能力（PWA）：file:// 下静默失败，不影响使用
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+  window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+}
+boot();
+</script>
+</body>
+</html>
