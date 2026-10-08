@@ -57,8 +57,11 @@ python -m http.server 8000
 加完之后从主屏图标进入，全屏运行，换网络也能用。
 
 仓库：https://github.com/jyfworking200012/rike （public，数据在各自浏览器本地，公开 URL 无隐私风险）。
-后续更新：改完 `index.html` 后 `git add . && git commit -m "..." && git push` 即自动重新部署（1-2 分钟生效）；
-若改了 `sw.js`，记得把文件内 `CACHE` 版本号 +1，否则旧缓存可能不刷新。
+
+**更新纪律**：改任何代码后 `git add . && git commit -m "..." && git push` 自动重新部署（1-2 分钟生效）。
+⚠️ **每次更新都必须把 `sw.js` 里的 `CACHE` 版本号 +1**（`rike-v1` → `rike-v2` …）：
+当前是「缓存优先」策略，sw.js 字节不变就不触发更新，手机会一直用旧缓存。+1 后手机下次打开时
+自动装新版，**隔一次打开生效**（SW 标准行为）。更新只换代码，**localStorage 里的玩家数据不受影响**。
 
 ### 方案 C：只看不用
 
