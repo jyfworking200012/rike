@@ -2,1213 +2,1109 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#f4efe3">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="夜行">
-<meta name="format-detection" content="telephone=no">
-<title>夜行</title>
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231a1d26'/%3E%3Ccircle cx='32' cy='26' r='9' fill='none' stroke='%23d9a441' stroke-width='3'/%3E%3Cpath d='M32 35v12M24 54h16' stroke='%23d9a441' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/lxgwwenkaiscreen.css">
+<meta name="apple-mobile-web-app-title" content="小镇">
+<meta name="theme-color" content="#f6f1e7">
+<title>小镇</title>
+<script>
+  // Service Worker：注册 + 有新版本时自动接管刷新一次（只刷一次，防循环）
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').then(function(reg){
+        reg.update().catch(function(){});
+        setInterval(function(){ reg.update().catch(function(){}); }, 3600 * 1000);
+      }).catch(function(){});
+    });
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if (reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
+    document.addEventListener('visibilitychange', function(){
+      if (document.visibilityState === 'visible' && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage('CHECK');
+      }
+    });
+  }
+</script>
 <style>
-/* ══════════════ 主题：白天纸色 / 夜里墨色 ══════════════ */
-:root{
-  --bg:#f4efe3; --bg2:#ece4d3; --card:#fffdf7; --card2:#f7f2e6;
-  --ink:#2a2925; --ink2:#57534a; --ink3:#8b8478;
-  --line:#d9cfb9; --line2:#c8ba9d;
-  --acc:#a8762a; --acc2:#c99a45; --ok:#5f7a4e; --bad:#a8543c;
-  --glow:rgba(201,154,69,.18);
-  --chrome:rgba(244,239,227,.94);
-  --r:14px;
-  --ease:cubic-bezier(.22,.9,.3,1);
-}
-body.night{
-  --bg:#141620; --bg2:#1b1e2b; --card:#1f2330; --card2:#252a3a;
-  --ink:#e6e0d2; --ink2:#b6b0a2; --ink3:#7b776d;
-  --line:#2f3444; --line2:#3d4356;
-  --acc:#d9a441; --acc2:#e8bd6c; --ok:#8fa87a; --bad:#c47a5e;
-  --glow:rgba(217,164,65,.14);
-  --chrome:rgba(20,22,32,.95);
-}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{
-  background:var(--bg); color:var(--ink);
-  font-family:"LXGW WenKai Screen","Songti SC","PingFang SC",system-ui,-apple-system,"Noto Sans SC",sans-serif;
-  font-size:16px; line-height:1.65;
-  overflow-x:hidden; max-width:100vw;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#efe8da;color:#2b2620;
+  font-size:15px;line-height:1.55;
   -webkit-font-smoothing:antialiased;
   overscroll-behavior-y:none;
-  transition:background .7s var(--ease), color .7s var(--ease);
 }
-#app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+#app{max-width:520px;margin:0 auto;background:#f6f1e7;min-height:100vh;position:relative;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
 
-/* ══════════════ 顶栏 ══════════════ */
-header{
-  position:sticky;top:0;z-index:30;
-  padding:calc(9px + env(safe-area-inset-top)) 16px 10px;
-  background:var(--chrome);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--line);
-  display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
-  transition:background .7s var(--ease), border-color .7s var(--ease);
+/* ---------- 顶部 ---------- */
+#hdr{padding:calc(10px + env(safe-area-inset-top)) 16px 8px;display:flex;align-items:baseline;justify-content:space-between}
+#hdr .d{font-size:13px;color:#9a8f7d;letter-spacing:.5px}
+#hdr .v{font-size:11px;color:#b8ae9c}
+.resbar{display:flex;gap:6px;padding:0 16px 6px;overflow-x:auto;scrollbar-width:none}
+.resbar::-webkit-scrollbar{display:none}
+.res{display:flex;align-items:center;gap:4px;background:#fffdf8;border:1px solid #e6ddcc;border-radius:9px;padding:3px 9px 3px 7px;font-size:13px;color:#4a4136;white-space:nowrap;flex:0 0 auto;transition:.25s}
+.res b{font-weight:600;font-variant-numeric:tabular-nums}
+.res.up{background:#eef4e6;border-color:#c6d8b4}
+.res.down{background:#f8ece6;border-color:#e0c3b6}
+.dot{width:7px;height:7px;border-radius:2px;display:inline-block}
+.res i{font-style:normal;font-size:11px;color:#a39887}
+
+/* ---------- 小镇 ---------- */
+#town{position:relative;margin:2px 10px 0;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(90,70,40,.08)}
+#town svg{display:block;width:100%;height:auto}
+#town .cap{position:absolute;left:12px;bottom:8px;font-size:11px;color:rgba(255,255,255,.72);letter-spacing:1px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+#town .pop{position:absolute;right:12px;bottom:8px;font-size:11px;color:rgba(255,255,255,.78);text-shadow:0 1px 3px rgba(0,0,0,.4)}
+
+/* ---------- 页面 ---------- */
+main{padding:14px 16px 20px}
+.sec-t{font-size:12px;color:#9a8f7d;letter-spacing:1.5px;margin:18px 0 9px;display:flex;justify-content:space-between;align-items:center}
+.sec-t span{letter-spacing:0}
+
+.tasks{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.task{
+  background:#fffdf8;border:1px solid #e6ddcc;border-radius:13px;
+  padding:11px 12px;text-align:left;cursor:pointer;position:relative;
+  transition:transform .12s ease,background .2s,border-color .2s;
+  -webkit-user-select:none;user-select:none;
 }
-.hd-t{font-size:17px;font-weight:700;letter-spacing:.14em;line-height:1.2}
-.hd-s{font-size:11.5px;color:var(--ink3);margin-top:2px;letter-spacing:.04em}
-.hd-v{text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
-.hd-v .n{font-size:21px;font-weight:700;color:var(--acc);line-height:1}
-.hd-v .k{font-size:10.5px;color:var(--ink3);letter-spacing:.1em;margin-top:3px}
+.task:active{transform:scale(.97)}
+.task.on{background:#f2f7ea;border-color:#b9cfa4}
+.task .n{font-size:15px;font-weight:600;color:#2b2620;display:flex;align-items:center;gap:6px}
+.task .p{font-size:12px;color:#8a8070;margin-top:3px}
+.task .who{font-size:11px;color:#a39887;margin-top:5px;letter-spacing:.2px}
+.task.on .who{color:#5c7a4a}
+.task .chk{position:absolute;top:10px;right:11px;width:16px;height:16px;border-radius:50%;border:1.5px solid #ddd2be;transition:.2s}
+.task.on .chk{background:#5c7a4a;border-color:#5c7a4a}
+.task.on .chk::after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 1.8px 1.8px 0;transform:rotate(42deg)}
+.task.lock{opacity:.5}
+.task.lock .who{color:#b0a694}
 
-/* ══════════════ 通用 ══════════════ */
-.sec{padding:0 14px}
-.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:18px 2px 9px}
-.sec-h .x{font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--ink2)}
-.sec-h .y{font-size:11.5px;color:var(--ink3)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);transition:background .5s,border-color .5s}
-.note{font-size:12.5px;color:var(--ink3);line-height:1.7}
-
-/* ══════════════ 打卡卡 ══════════════ */
-.tk{
-  display:flex;align-items:center;gap:11px;
-  padding:12px 13px;margin-bottom:8px;
-  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-  cursor:pointer;transition:transform .12s,border-color .25s,background .25s;
-  position:relative;overflow:hidden;
-}
-.tk:active{transform:scale(.985)}
-.tk .gl{
-  width:33px;height:33px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  border:1px solid var(--line2);border-radius:10px;
-  background:var(--bg2);color:var(--ink2);transition:all .3s;
-}
-.tk .gl svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.tk .bd{flex:1;min-width:0}
-.tk .nm{font-size:14.5px;font-weight:600;line-height:1.35}
-.tk .ds{font-size:11.5px;color:var(--ink3);margin-top:1px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tk .eff{font-size:11px;color:var(--acc);flex-shrink:0;font-weight:600;letter-spacing:.02em}
-.tk.on{background:var(--card2);border-color:var(--line2)}
-.tk.on .gl{background:var(--ok);border-color:var(--ok);color:#fff}
-.tk.on .ds{color:var(--ink2)}
-.tk.pop{animation:pop .45s cubic-bezier(.2,.9,.3,1.3)}
-@keyframes pop{0%{transform:scale(1)}38%{transform:scale(1.03)}100%{transform:scale(1)}}
-
-/* ══════════════ 筹码条 ══════════════ */
-.chips{display:flex;gap:8px;padding:0 14px;margin:12px 0 4px}
-.chip{
-  flex:1;text-align:center;padding:10px 4px 9px;
-  background:var(--card);border:1px solid var(--line);border-radius:11px;
-  transition:background .5s,border-color .5s;
-}
-.chip .v{font-size:19px;font-weight:700;color:var(--acc);line-height:1.1;font-variant-numeric:tabular-nums}
-.chip .k{font-size:10.5px;color:var(--ink3);margin-top:3px;letter-spacing:.06em}
-
-/* ══════════════ 按钮 ══════════════ */
 .btn{
-  display:block;width:100%;padding:14px;border-radius:13px;
-  border:1px solid var(--line2);background:var(--card);color:var(--ink);
-  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.06em;
-  cursor:pointer;transition:transform .12s,background .25s,border-color .25s;
+  display:block;width:100%;padding:14px;border-radius:13px;border:none;
+  background:#3d3428;color:#f8f4ea;font-size:15.5px;font-weight:600;letter-spacing:1px;
+  cursor:pointer;transition:transform .12s;font-family:inherit;
 }
-.btn:active{transform:scale(.985)}
-.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-body.night .btn.primary{background:var(--acc);color:#1a1d26;border-color:var(--acc)}
-.btn.ghost{background:transparent}
-.btn:disabled{opacity:.42;cursor:default}
-.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{background:#d8cfbe;color:#a2988a}
+.btn.ghost{background:#fffdf8;color:#5a5044;border:1px solid #e0d7c6;font-weight:500}
+.btn .sub{display:block;font-size:11.5px;font-weight:400;opacity:.7;margin-top:2px;letter-spacing:.3px}
 
-/* ══════════════ 入夜 ══════════════ */
-.nightwrap{padding:0 16px}
-.scene{
-  min-height:22vh;padding:22px 2px 16px;
-  font-size:17px;line-height:1.95;letter-spacing:.02em;color:var(--ink);
-  animation:fade .7s var(--ease);
-}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.scene p{margin:0 0 15px}
-.scene .dim{color:var(--ink3);font-size:14px}
+/* 建筑 */
+.bcard{background:#fffdf8;border:1px solid #e6ddcc;border-radius:13px;padding:12px 13px;margin-bottom:9px;display:flex;gap:11px;align-items:center}
+.bcard .ic{width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:#f2ece0;display:flex;align-items:center;justify-content:center}
+.bcard .bd{flex:1;min-width:0}
+.bcard .bn{font-size:14.5px;font-weight:600}
+.bcard .bx{font-size:12px;color:#8a8070;margin-top:2px;line-height:1.42}
+.bcard .bc{font-size:11.5px;color:#9a8f7d;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+.bcard .bc s{color:#c0b5a2;text-decoration:line-through}
+.bcard .bb{flex:0 0 auto;border:none;background:#3d3428;color:#f8f4ea;font-size:12.5px;padding:8px 13px;border-radius:9px;font-weight:600;font-family:inherit;cursor:pointer}
+.bcard .bb:disabled{background:#e6ddcc;color:#b0a694}
+.bcard .bb.built{background:#eef4e6;color:#5c7a4a}
+.lv{font-size:10.5px;background:#f0e9db;color:#8a7f6c;border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:1px}
 
-.opt{
-  display:block;width:100%;text-align:left;
-  padding:13px 14px;margin-bottom:9px;
-  background:var(--card);border:1px solid var(--line);border-radius:12px;
-  color:var(--ink);font-family:inherit;font-size:14.5px;line-height:1.5;
-  cursor:pointer;transition:transform .12s,border-color .2s,background .2s;
-  position:relative;
-}
-.opt:active{transform:scale(.99)}
-.opt .lb{display:block;font-weight:600}
-.opt .cost{display:block;font-size:11.5px;color:var(--ink3);margin-top:3px;letter-spacing:.02em}
-.opt .cost b{color:var(--acc);font-weight:600}
-.opt:disabled{opacity:.38}
+/* 人 */
+.prow{display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid #eee5d6}
+.prow:last-child{border-bottom:none}
+.pav{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex:0 0 34px}
+.pn{font-size:14px;font-weight:600}
+.pd{font-size:11.5px;color:#8a8070;margin-top:1px}
+.pq{font-size:11.5px;color:#a39887;margin-left:auto;text-align:right;flex:0 0 auto}
+/* 镇子等级 */
+.rk{margin-bottom:14px}
+.rk-t{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:#8a8070;margin-bottom:5px}
+.rk-t b{color:#3d3428;font-size:14.5px;letter-spacing:2px;font-weight:700}
+.rk-b{height:5px;border-radius:3px;background:#e6ddcc;overflow:hidden}
+.rk-b i{display:block;height:100%;background:linear-gradient(90deg,#a89372,#7a6a4a);border-radius:3px;transition:width .6s cubic-bezier(.22,.9,.3,1)}
+.empty{text-align:center;padding:34px 20px;color:#9a8f7d;font-size:13.5px;line-height:1.9}
 
-/* 顶部状态条 */
-.bar{
-  display:flex;gap:6px;padding:9px 16px;
-  border-bottom:1px solid var(--line);
-  background:var(--chrome);
-  position:sticky;top:0;z-index:20;
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-}
-.bar i{
-  font-style:normal;font-size:11.5px;color:var(--ink2);
-  padding:3px 9px;border-radius:20px;background:var(--bg2);
-  font-variant-numeric:tabular-nums;letter-spacing:.02em;
-}
-.bar i b{color:var(--acc);font-weight:700}
+/* 日志 */
+.logrow{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f0e8da;font-size:13px}
+.logrow .ld{color:#b0a694;font-size:11.5px;flex:0 0 42px;padding-top:2px;font-variant-numeric:tabular-nums}
+.logrow .lt{color:#4a4136;flex:1}
 
-/* ══════════════ 城市地图 ══════════════ */
-.mapwrap{padding:6px 14px 0}
-.citygrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:4px}
-.blk{
-  position:relative;padding:13px 12px;border-radius:12px;
-  background:var(--card);border:1px solid var(--line);
-  transition:all .35s;overflow:hidden;
-}
-.blk.unk{opacity:.4;border-style:dashed}
-.blk .nm{font-size:13.5px;font-weight:600;line-height:1.3}
-.blk .mt{font-size:10.5px;color:var(--ink3);margin-top:4px;display:flex;gap:7px;flex-wrap:wrap}
-.blk .mt span{font-variant-numeric:tabular-nums}
-.blk .dots{display:flex;gap:3px;margin-top:8px}
-.blk .dot{width:100%;height:4px;border-radius:2px;background:var(--line)}
-.blk .dot.f{background:var(--acc)}
-.blk .dot.h{background:var(--acc2);opacity:.55}
-.blk.lit3{box-shadow:0 0 0 1px var(--acc2), 0 0 18px -4px var(--glow)}
-
-/* ══════════════ 弹层 ══════════════ */
-#sheet{
-  position:fixed;inset:0;z-index:80;display:none;
-  align-items:flex-end;justify-content:center;
-  background:rgba(20,18,16,.45);
-  backdrop-filter:blur(2px);
-}
-#sheet.on{display:flex}
-#sheet-in{
-  width:100%;max-width:560px;max-height:88vh;overflow-y:auto;
-  background:var(--bg);border-radius:20px 20px 0 0;
-  padding:22px 20px calc(24px + env(safe-area-inset-bottom));
-  animation:up .34s var(--ease);
-  border-top:1px solid var(--line2);
-}
-@keyframes up{from{transform:translateY(34px);opacity:0}to{transform:none;opacity:1}}
-#sheet h3{margin:0 0 10px;font-size:17px;font-weight:700;letter-spacing:.06em}
-#sheet .body{font-size:14.5px;line-height:1.8;color:var(--ink2);margin-bottom:16px}
-#sheet .body b{color:var(--acc)}
-
-/* ══════════════ 底部导航 ══════════════ */
+/* ---------- 底栏 ---------- */
 #tabs{
-  position:fixed;left:0;right:0;bottom:0;z-index:40;
-  display:flex;
-  background:var(--chrome);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border-top:1px solid var(--line);
-  padding-bottom:env(safe-area-inset-bottom);
-  transition:background .7s,border-color .7s;
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:0;width:100%;max-width:520px;
+  display:flex;background:rgba(255,253,248,.94);backdrop-filter:blur(12px);
+  border-top:1px solid #e6ddcc;
+  padding-bottom:env(safe-area-inset-bottom);z-index:40;
 }
 #tabs button{
-  flex:1;border:0;background:none;padding:9px 2px 8px;
-  font-family:inherit;font-size:10.5px;letter-spacing:.1em;
-  color:var(--ink3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
-  transition:color .2s;
+  flex:1;border:none;background:none;padding:9px 0 8px;font-size:11px;color:#a39887;
+  font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;
 }
-#tabs button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
-#tabs button.on{color:var(--acc);font-weight:700}
+#tabs button svg{width:21px;height:21px;stroke:#a39887;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#tabs button.on{color:#3d3428}
+#tabs button.on svg{stroke:#3d3428}
 
-/* ══════════════ 建造 ══════════════ */
-.bd-row{
-  display:flex;align-items:center;gap:12px;
-  padding:13px;margin-bottom:9px;
-  background:var(--card);border:1px solid var(--line);border-radius:12px;
+/* ---------- 弹层 ---------- */
+#modal{position:fixed;inset:0;z-index:90;display:none}
+#modal.show{display:block}
+#modal .mask{position:absolute;inset:0;background:rgba(40,32,22,.42);backdrop-filter:blur(2px)}
+#modal .sheet{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:520px;
+  background:#f6f1e7;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  animation:up .28s cubic-bezier(.22,.9,.3,1);
 }
-.bd-row .ic{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  border:1px solid var(--line2);border-radius:9px;color:var(--acc)}
-.bd-row .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.bd-row .bd{flex:1;min-width:0}
-.bd-row .nm{font-size:14px;font-weight:600}
-.bd-row .ds{font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.45}
-.bd-row .lv{display:flex;gap:3px;margin-top:6px}
-.bd-row .lv i{width:14px;height:3px;border-radius:2px;background:var(--line)}
-.bd-row .lv i.f{background:var(--acc)}
-.bd-row button{
-  flex-shrink:0;padding:7px 11px;border-radius:9px;border:1px solid var(--line2);
-  background:transparent;color:var(--ink);font-family:inherit;font-size:12px;
-  cursor:pointer;transition:all .2s;
-}
-.bd-row button:disabled{opacity:.35}
-.bd-row button.can{border-color:var(--acc);color:var(--acc)}
+@keyframes up{from{transform:translate(-50%,40px);opacity:.6}to{transform:translate(-50%,0);opacity:1}}
+.sheet h2{margin:0 0 4px;font-size:19px;font-weight:700}
+.sheet .sub{font-size:12.5px;color:#9a8f7d;margin-bottom:16px;letter-spacing:.5px}
+.sheet p{margin:0 0 12px;font-size:14px;color:#4a4136;line-height:1.72}
 
-/* ══════════════ toast ══════════════ */
-#toast{
-  position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));
-  transform:translate(-50%,12px);z-index:90;
-  background:var(--ink);color:var(--bg);
-  padding:9px 17px;border-radius:20px;font-size:13px;
-  opacity:0;pointer-events:none;transition:all .28s var(--ease);
-  max-width:82vw;text-align:center;line-height:1.45;
+.opt{
+  display:block;width:100%;text-align:left;background:#fffdf8;border:1px solid #e6ddcc;
+  border-radius:12px;padding:12px 14px;margin-bottom:9px;font-family:inherit;cursor:pointer;
+  transition:transform .1s;
 }
-#toast.on{opacity:1;transform:translate(-50%,0)}
+.opt:active{transform:scale(.985)}
+.opt:disabled{opacity:.42}
+.opt .lb{display:block;font-size:14.5px;font-weight:600;color:#2b2620}
+.opt .cost{display:block;font-size:11.5px;color:#9a8f7d;margin-top:3px}
+.opt .cost b{color:#5c7a4a;font-weight:600}
+.opt .cost em{font-style:normal;color:#a8543c}
 
-.mat-inv{display:flex;gap:8px;padding:0 14px;margin:10px 0 2px;flex-wrap:wrap}
-.mat-inv div{
-  flex:1;min-width:66px;text-align:center;padding:9px 3px;
-  background:var(--card);border:1px solid var(--line);border-radius:10px;
-}
-.mat-inv .v{font-size:16px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
-.mat-inv .k{font-size:10.5px;color:var(--ink3);margin-top:2px;letter-spacing:.06em}
+.tally{border-top:1px solid #e6ddcc;margin-top:6px;padding-top:12px}
+.tally .ti{display:flex;justify-content:space-between;font-size:13.5px;padding:4px 0;color:#4a4136}
+.tally .ti .k{color:#8a8070}
+.tally .ti .v{font-variant-numeric:tabular-nums;font-weight:600}
+.tally .ti.neg .v{color:#a8543c}
+.tally .ti.pos .v{color:#5c7a4a}
+.tally .hd{font-size:11.5px;color:#a39887;letter-spacing:1px;margin:10px 0 2px}
 
-.notes-item{
-  font-size:13px;line-height:1.75;color:var(--ink2);
-  padding:11px 13px;margin-bottom:8px;border-left:2px solid var(--line2);
-  background:var(--card);border-radius:0 10px 10px 0;
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom));
+  background:rgba(45,37,27,.92);color:#f8f4ea;font-size:13px;padding:9px 16px;border-radius:20px;
+  z-index:120;opacity:0;transition:opacity .25s;pointer-events:none;max-width:80%;text-align:center;
 }
-.notes-item .who{font-size:11px;color:var(--ink3);letter-spacing:.06em;margin-bottom:3px}
+.toast.show{opacity:1}
+
+/* SVG 动效 */
+.walk{animation:walk 9s ease-in-out infinite}
+@keyframes walk{0%,100%{transform:translateX(0)}50%{transform:translateX(14px)}}
+.smoke{animation:smoke 4.5s ease-in-out infinite}
+@keyframes smoke{0%{opacity:.28;transform:translateY(0)}50%{opacity:.5;transform:translateY(-5px)}100%{opacity:.28;transform:translateY(0)}}
+.flick{animation:flick 3.2s ease-in-out infinite}
+@keyframes flick{0%,100%{opacity:1}45%{opacity:.82}70%{opacity:.94}}
 </style>
 </head>
 <body>
 <div id="app">
-  <header>
-    <div>
-      <div class="hd-t" id="hd-t">夜行</div>
-      <div class="hd-s" id="hd-s">天亮着</div>
-    </div>
-    <div class="hd-v">
-      <div class="n" id="hd-n">2</div>
-      <div class="k" id="hd-k">滴灯油</div>
-    </div>
-  </header>
-
+  <div id="hdr">
+    <div class="d" id="dayLabel">第 1 天</div>
+    <div class="v" id="verLabel"></div>
+  </div>
+  <div class="resbar" id="resbar"></div>
+  <div id="town"></div>
   <main id="main"></main>
+  <nav id="tabs">
+    <button data-tab="today" class="on">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+      <span>今天</span>
+    </button>
+    <button data-tab="build">
+      <svg viewBox="0 0 24 24"><path d="M4 20V9l6-4 6 4v11"/><path d="M16 20V13h4v7"/><path d="M8 20v-5h4v5"/></svg>
+      <span>建镇</span>
+    </button>
+    <button data-tab="people">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.2 2.5-5.4 5.5-5.4s5.5 2.2 5.5 5.4"/><circle cx="17.5" cy="9" r="2.4"/><path d="M16 14.4c2.6.2 4.5 2.2 4.5 5"/></svg>
+      <span>人</span>
+    </button>
+    <button data-tab="log">
+      <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+      <span>记录</span>
+    </button>
+  </nav>
 </div>
-
-<nav id="tabs">
-  <button data-tab="day" class="on">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
-    <span>白天</span>
-  </button>
-  <button data-tab="city">
-    <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l5-3 5 3v13M15 21V12l4-2v11"/><path d="M8 12h1M8 16h1M12 12h1M12 16h1"/></svg>
-    <span>城市</span>
-  </button>
-  <button data-tab="home">
-    <svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-7h6v7"/></svg>
-    <span>安全屋</span>
-  </button>
-  <button data-tab="notes">
-    <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 9h7M8 13h7M8 17h4"/></svg>
-    <span>笔记</span>
-  </button>
-</nav>
-
-<div id="sheet"><div id="sheet-in"></div></div>
-<div id="toast"></div>
+<div id="modal"><div class="mask"></div><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
 
 <script>
-"use strict";
-/* ═══════════════════════════════════════════════════════════
-   夜行 v3 —— 设计文档见 docs/GDD-v3.md
-   核心：打卡 → 今晚的灯油/胆/线索 → 入夜 → 节点选择 → 带回材料 → 建造
-   ═══════════════════════════════════════════════════════════ */
+/* ==========================================================================
+   小镇 v4 —— 打卡招人，人撑起镇子
+   ========================================================================== */
 
-const SAVE = 'rike_night_v3';
-const APP_VER = 'v3.0';
+const APP_VER = 'v4.0';
+const SAVE = 'town_v4';
+const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 
-/* ───────── 七件事 → 筹码 ───────── */
+/* ---------- 数据定义 ---------- */
+
+// 七件事 → 七个人。每人每天产出一种资源。
 const TASKS = [
-  { id:'wake',   name:'早起',   desc:'不是被闹钟叫醒', eff:'灯油 +1', icon:'sun' },
-  { id:'train',  name:'锻炼',   desc:'动到出汗',       eff:'胆 +2',   icon:'run' },
-  { id:'shower', name:'洗澡',   desc:'洗干净',         eff:'隐蔽 +1',  icon:'drop' },
-  { id:'study',  name:'学习',   desc:'啃一点难的东西', eff:'线索 +1', icon:'book' },
-  { id:'quit',   name:'戒断',   desc:'今天没碰',       eff:'胆 +1',   icon:'ban' },
-  { id:'read',   name:'阅读',   desc:'读进去',         eff:'线索 +2', icon:'read' },
-  { id:'sleep',  name:'早睡',   desc:'今晚少走一步',   eff:'明天 +2', icon:'moon' }
+  { id:'wake',  name:'早起',     prof:'樵夫',   who:'老陈',   res:'wood',  n:5, lines:'天不亮就上山，回来时背比门框还宽。' },
+  { id:'train', name:'运动',     prof:'猎人',   who:'阿岩',   res:'meat',  n:2, lines:'腿上有旧伤，走山路比谁都快。' },
+  { id:'wash',  name:'洗澡',     prof:'洗衣妇', who:'苏姐',   res:'cloth', n:2, lines:'手泡得发白，全镇的布都归她管。' },
+  { id:'study', name:'学习',     prof:'石匠',   who:'白先生', res:'stone', n:3, lines:'敲石头前先量三遍，说石头不会骗人。' },
+  { id:'quit',  name:'不刷手机', prof:'铁匠',   who:'锤子',   res:'iron',  n:2, lines:'话少。一开口就是要炭。', need:'forge' },
+  { id:'read',  name:'阅读',     prof:'账房',   who:'纸生',   res:'coin',  n:3, lines:'算盘打得极好，算自己那份总慢半拍。', need:'market' },
+  { id:'sleep', name:'早睡',     prof:'守夜人', who:'灯',     res:'safe',  n:1, lines:'白天睡觉，夜里绕镇子走七圈。' }
 ];
-const ICONS = {
-  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
-  run:'<circle cx="15" cy="4.5" r="1.8"/><path d="M13.5 8l-3 3 2 3-3.5 5M13.5 8l3 2 2.5-.5M12.5 14h4"/>',
-  drop:'<path d="M12 3s5 5.2 5 9a5 5 0 01-10 0c0-3.8 5-9 5-9z"/>',
-  book:'<path d="M4 5a2 2 0 012-2h12v18H6a2 2 0 01-2-2z"/><path d="M4 17h14"/>',
-  ban:'<circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/>',
-  read:'<path d="M3 6h7v14H3zM14 6h7v14h-7z"/><path d="M6 10h1M17 10h1"/>',
-  moon:'<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>',
-  lamp:'<path d="M9 3h6l2 6H7zM12 9v9M9 21h6"/>',
-  map:'<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',
-  shelf:'<path d="M4 4h16v16H4z"/><path d="M4 10h16M4 15h16M9 4v6M15 10v5"/>',
-  sand:'<path d="M5 20V9l7-5 7 5v11z"/><path d="M9 20v-6h6v6"/>',
-  gram:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>'
+
+const RES = {
+  wood:  { name:'木', color:'#8b6b45' },
+  stone: { name:'石', color:'#8d8b85' },
+  meat:  { name:'肉', color:'#b0553c' },
+  cloth: { name:'布', color:'#7b8fa3' },
+  iron:  { name:'铁', color:'#5f6b78' },
+  coin:  { name:'钱', color:'#c09a3e' }
 };
 
-/* ───────── 城市：12 个街区 ───────── */
-/* unlock: 需要已点亮的前置街区 id；dist: 从家出发的步数成本 */
-const BLOCKS = [
-  { id:'home',  name:'你家楼下',   dist:0, res:'wood',  danger:0, unlock:null,     desc:'一盏坏掉的声控灯。' },
-  { id:'shop',  name:'便利店',     dist:1, res:'paper', danger:0, unlock:'home',   desc:'卷帘门半拉着，里面还有冷气。' },
-  { id:'b3',    name:'三号楼',     dist:1, res:'cloth', danger:1, unlock:'home',   desc:'灯总是亮着，但没人承认住这。' },
-  { id:'shed',  name:'旧车棚',     dist:1, res:'metal', danger:1, unlock:'home',   desc:'铁皮上全是锈，风一大就响。' },
-  { id:'cross', name:'十字路口',   dist:1, res:'paper', danger:1, unlock:'shop',   desc:'四个方向都通向更暗的地方。' },
-  { id:'under', name:'桥洞',       dist:2, res:'cloth', danger:2, unlock:'b3',     desc:'水声比车声大。有人在这住过。' },
-  { id:'yard',  name:'废品站',     dist:2, res:'metal', danger:1, unlock:'shed',   desc:'东西堆得比人高，标价牌还在。' },
-  { id:'post',  name:'老邮局',     dist:2, res:'paper', danger:1, unlock:'cross',  desc:'信箱都是开的，里面塞满了。' },
-  { id:'bank',  name:'河堤',       dist:2, res:'wood',  danger:2, unlock:'under',  desc:'护栏断了一截，往下是黑的。' },
-  { id:'sub',   name:'地铁口',     dist:3, res:'metal', danger:2, unlock:'post',   desc:'扶梯还在转，但没有人上去。' },
-  { id:'shell', name:'烂尾楼',     dist:3, res:'cloth', danger:3, unlock:'bank',   desc:'二十三层的骨架，电梯井没有门。' },
-  { id:'edge',  name:'城市边缘',   dist:3, res:'metal', danger:3, unlock:'shell',  desc:'再往前，路灯就不管了。' }
-];
-const MATS = {
-  wood:  { name:'木', icon:'▤' },
-  cloth: { name:'布', icon:'▧' },
-  paper: { name:'纸', icon:'▨' },
-  metal: { name:'铁', icon:'▩' }
-};
-
-/* ───────── 建筑 ───────── */
 const BUILDS = [
-  { id:'shelf', name:'书架',   icon:'shelf', costs:[3,8,20],  costMat:'wood',
-    desc:['每晚开局线索 +1','每晚开局线索 +2','每晚开局线索 +3'] },
-  { id:'sand',  name:'沙袋',   icon:'sand',  costs:[4,10,24], costMat:'cloth',
-    desc:['被困时保留 70% 材料','保留 85%','保留 100%'] },
-  { id:'wall',  name:'地图墙', icon:'map',   costs:[5,12,28], costMat:'paper',
-    desc:['入夜前看到第一个节点','看到前两个','看到整晚路线'] },
-  { id:'gram',  name:'留声机', icon:'gram',  costs:[6,14,32], costMat:'metal',
-    desc:['下一代继承 1 线索','继承 2 线索','继承 3 线索'] }
+  { id:'hut',    name:'木棚',   icon:'hut',    cost:{wood:10},
+    desc:'能住两个人。人来了得有地方睡。', eff:'人口上限 +2', repeat:true, cap:3 },
+  { id:'stonehouse', name:'石屋', icon:'house', cost:{wood:20, stone:15},
+    desc:'能住四个人，不怕火。', eff:'人口上限 +4', repeat:true, cap:2, need:'hut' },
+  { id:'trap',   name:'陷阱',   icon:'trap',   cost:{wood:5, cloth:2},
+    desc:'下在兽道上。阿岩的收成能多一份。', eff:'猎人肉产 +1', repeat:true, cap:3 },
+  { id:'granary',name:'粮仓',   icon:'granary',cost:{wood:15, stone:6},
+    desc:'把肉腌起来，吃慢一点。', eff:'食物消耗 −40%', repeat:false },
+  { id:'well',   name:'井',     icon:'well',   cost:{stone:10},
+    desc:'不用再走半里地去挑水。', eff:'免疫旱灾与疫病', repeat:false },
+  { id:'forge',  name:'铁匠铺', icon:'forge',  cost:{wood:15, stone:12},
+    desc:'有了炉子，锤子才肯留下干活。', eff:'解锁铁匠锤子', repeat:false },
+  { id:'market', name:'集市',   icon:'market', cost:{wood:20, iron:8},
+    desc:'逢五开市。纸生在那里记账。', eff:'解锁账房纸生 · 可买肉', repeat:false, need:'forge' },
+  { id:'tower',  name:'瞭望塔', icon:'tower',  cost:{wood:18, stone:16},
+    desc:'能看见山那边先亮起的火。', eff:'事件提前一天预警', repeat:false, need:'hut' },
+  { id:'shrine', name:'祠堂',   icon:'shrine', cost:{wood:30, stone:30, iron:12, coin:20},
+    desc:'镇子最老的那棵树旁。有它在，人心就定。', eff:'事件概率 −40%', repeat:false, need:'stonehouse' }
 ];
 
-/* ───────── 节点库：按街区气质分组 ─────────
-   opt: { lb 标签, cost{oil,nerve,clue}, gain{mat:n}, need 需求, res 结算文本, lit 额外亮度 }
-*/
-const NODES = {
-  home: [
-    { t:'声控灯闪了两下，又灭了。你站在楼道里，能听见楼上有很轻的脚步声——但你住在顶楼。',
-      o:[ {lb:'上一层看看', cost:{oil:1,nerve:1}, gain:{cloth:2}, res:'楼梯转角堆着一小捆布，像是有人特意放的。'},
-          {lb:'退回屋里', cost:{oil:1}, gain:{}, res:'你关上门。脚步声停了。' } ] },
-    { t:'楼下花坛里插着一根木棍，上面系着红绳。昨天没有这根木棍。',
-      o:[ {lb:'拔出来带走', cost:{oil:1}, gain:{wood:3}, res:'土很松，一拔就出来了。'},
-          {lb:'不动它', cost:{oil:1}, gain:{}, res:'你绕了过去。红绳在风里转。' } ] },
-    { t:'楼道口的快递柜自己弹开了一格。里面是一张纸，字迹是你的。',
-      o:[ {lb:'拿走那张纸', cost:{oil:1}, gain:{paper:3}, res:'纸上写着三个字：别上楼。'},
-          {lb:'关上柜门', cost:{oil:1}, gain:{}, res:'柜门关不上。你没再管它。' } ] }
-  ],
-  shop: [
-    { t:'冷柜还在响，灯管有一根是亮的。货架空了，但收银台上放着一沓纸。',
-      o:[ {lb:'拿走那沓纸', cost:{oil:1}, gain:{paper:4}, res:'纸上全是同一天的购物小票。'},
-          {lb:'打开冷柜', cost:{oil:1,nerve:1}, gain:{cloth:2,paper:1}, res:'冷柜最下层放着一件叠好的衣服。'},
-          {lb:'只站在门口听', cost:{oil:1}, gain:{}, res:'除了压缩机，什么声音都没有。' } ] },
-    { t:'自动门卡在中间，一半开一半关。你侧身进去。地上有拖拽的痕迹。',
-      o:[ {lb:'跟着痕迹走', cost:{oil:2,nerve:1}, gain:{cloth:4}, res:'痕迹停在储藏室门口。门后有东西。', lit:1},
-          {lb:'就在前面翻翻', cost:{oil:1}, gain:{cloth:1}, res:'只有几卷用了一半的胶带。'} ] }
-  ],
-  b3: [
-    { t:'三号楼整层就一户亮着灯。你知道那户人家三年前就搬走了。',
-      o:[ {lb:'按门铃', cost:{oil:1,nerve:2}, gain:{cloth:3,paper:2}, res:'门开了一条缝。里面没有人，但桌上有一杯还热的水。', lit:1},
-          {lb:'从门缝往里看', cost:{oil:1,clue:1}, gain:{paper:3}, res:'你读懂了门上的记号：这一户被人标过。'},
-          {lb:'绕到楼后', cost:{oil:1}, gain:{cloth:2}, res:'楼后晾衣绳上挂满了衣服，全是同一件。'} ] },
-    { t:'电梯停在 6 楼，一直没动。楼层显示器的数字在跳，但电梯不动。',
-      o:[ {lb:'走楼梯上去', cost:{oil:3,nerve:2}, gain:{cloth:5,metal:2}, res:'六楼的走廊尽头堆着一整箱东西。没人来找过。', lit:1},
-          {lb:'在一楼等', cost:{oil:2}, gain:{cloth:2}, res:'电梯停在那儿，一整晚都没下来。'} ] }
-  ],
-  shed: [
-    { t:'铁皮棚子的门半开着。里面是你小时候那种自行车，三辆，全都锁着。',
-      o:[ {lb:'撬一把锁', cost:{oil:2}, gain:{metal:4}, res:'锁很脆。你没要车，只要了链条。'},
-          {lb:'把三辆都看一遍', cost:{oil:2,clue:1}, gain:{metal:3,paper:2}, res:'三辆车的车牌号是连着的。'} ] },
-    { t:'车棚顶上有东西在响。抬头，只看见一片铁皮在晃。',
-      o:[ {lb:'等它停下来', cost:{oil:2}, gain:{metal:2}, res:'响声停了。地上多了一块螺丝。'},
-          {lb:'爬上去看', cost:{oil:2,nerve:2}, gain:{metal:5}, res:'顶上堆着一堆拆开的零件，摆得很整齐。', lit:1} ] }
-  ],
-  cross: [
-    { t:'四个路口都空着。电子屏上滚动着日期，比今天早了七年。',
-      o:[ {lb:'走进屏幕照亮的那个路口', cost:{oil:1,nerve:1}, gain:{paper:3}, res:'地上散着几张传单。活动日期是七年前。'},
-          {lb:'逆着电子屏走', cost:{oil:2,nerve:1}, gain:{paper:2,cloth:2}, res:'光在你背后。前面的路更暗，但东西更多。'},
-          {lb:'站在原地等一辆车', cost:{oil:2}, gain:{}, res:'没有车。凌晨四点也没有。'} ] },
-    { t:'斑马线上摆着一张椅子，正对着你。椅子上有一件外套。',
-      o:[ {lb:'拿走外套', cost:{oil:1}, gain:{cloth:4}, res:'很干净，还有洗衣液的味道。'},
-          {lb:'坐下', cost:{oil:2,nerve:2}, gain:{cloth:2,paper:2}, res:'你坐了一分钟。什么都没发生，除了你不再觉得冷。', lit:1} ] }
-  ],
-  under: [
-    { t:'水声盖住了别的声音。桥洞的墙上有字，一层压着一层。',
-      o:[ {lb:'读最外面的那层', cost:{oil:1,clue:1}, gain:{paper:3}, res:'最近写的一行：别在周三来。'},
-          {lb:'往深处走', cost:{oil:3,nerve:2}, gain:{cloth:5,metal:2}, res:'最里面有铺盖和一只铁盒。人已经不在了。', lit:1},
-          {lb:'离开', cost:{oil:1}, gain:{}, res:'你上到桥面。车流已经开始了。'} ] }
-  ],
-  yard: [
-    { t:'废品站的东西堆得比人高。老板的椅子上盖着塑料布。',
-      o:[ {lb:'翻铁堆', cost:{oil:2}, gain:{metal:5}, res:'你翻出几块还带着螺丝的角铁。'},
-          {lb:'翻纸堆', cost:{oil:2}, gain:{paper:5}, res:'一摞旧报纸，日期都停在同一年。'},
-          {lb:'找老板', cost:{oil:2,nerve:2}, gain:{metal:3,cloth:3}, res:'帘子后面有人，但他没回头。你拿了东西就走了。', lit:1} ] }
-  ],
-  post: [
-    { t:'老邮局的信箱全是开着的，塞满了。最早的一封邮戳是二十年前。',
-      o:[ {lb:'抽一沓出来', cost:{oil:1}, gain:{paper:5}, res:'收件人都是同一个名字。'},
-          {lb:'按邮戳找最近的一封', cost:{oil:2,clue:1}, gain:{paper:3,cloth:2}, res:'最近那封是上周的，收件人是你的地址。', lit:1} ] },
-    { t:'分拣室的门开着，传送带上还卡着几个包裹。',
-      o:[ {lb:'拆一个', cost:{oil:1,nerve:1}, gain:{cloth:3,paper:2}, res:'包裹里是一件旧衣服，尺码正好。'},
-          {lb:'把传送带关掉', cost:{oil:2}, gain:{metal:3}, res:'机器停了。你从传送带里抽出几根轴。'} ] }
-  ],
-  bank: [
-    { t:'护栏断了一截。往下走是河滩，水声很近，但看不见水。',
-      o:[ {lb:'沿着断口下去', cost:{oil:3,nerve:2}, gain:{wood:6}, res:'河滩上漂满了木头，都是上游冲下来的。', lit:1},
-          {lb:'在堤上走一段', cost:{oil:2}, gain:{wood:3}, res:'你捡了几根干的树枝。'} ] }
-  ],
-  sub: [
-    { t:'扶梯还在转，但没有人上去。站台上的灯每隔三秒闪一次。',
-      o:[ {lb:'下到站台', cost:{oil:3,nerve:2}, gain:{metal:4,paper:3}, res:'售票机还能用，里面掉出一把硬币和几张票。', lit:1},
-          {lb:'坐在扶梯上看它转', cost:{oil:2}, gain:{metal:2}, res:'你看了很久。扶手带上有一圈手印，位置很整齐。' } ] }
-  ],
-  shell: [
-    { t:'二十三层的骨架。电梯井没有门，能直接看到最底下。',
-      o:[ {lb:'往上爬十层', cost:{oil:4,nerve:3}, gain:{cloth:6,metal:4}, res:'十层有一间已经装好窗的屋子，里面有人住过。', lit:2},
-          {lb:'在底层找找', cost:{oil:2}, gain:{metal:3,cloth:2}, res:'水泥地上散着保温棉和扎带。'} ] }
-  ],
-  edge: [
-    { t:'再往前，路灯就不管了。你站在最后一盏灯下。前面是完整的黑。',
-      o:[ {lb:'走出灯的边界', cost:{oil:4,nerve:3}, gain:{metal:8,cloth:6}, res:'你走了二十步，脚下踩到很硬的东西。是别人留下的箱子，装满了。', lit:2},
-          {lb:'留在灯下', cost:{oil:2,clue:1}, gain:{paper:4}, res:'你在地上找到一张手绘的地图。上面的边界，比你走过的远得多。'} ] }
-  ]
-};
+/* 事件：tier 1 小 / 2 中 / 3 大 */
+const EVENTS = [
+  { id:'beast', tier:1, title:'山上下来的东西',
+    text:'半夜，狗不叫了。栅栏外面有东西在喘。',
+    opts:[
+      { lb:'让阿岩去赶', need:{prof:'train'}, cost:{meat:1}, res:'阿岩提着刀出去了，半个时辰后回来，刀上有血，人没事。肉少了一块，他拿去引开了它。' },
+      { lb:'把门堵死，等天亮', cost:{wood:3}, res:'你们用三根木头把门顶住，蹲了一夜。天亮时外面只剩几个脚印。' },
+      { lb:'不管它', cost:{}, warn:'丢两块肉', res:'它撞开了篱笆，叼走了挂在檐下的两块肉。', bad:{meat:2} }
+    ]},
+  { id:'rain', tier:1, title:'连下了三天雨',
+    text:'屋顶开始漏。地上积了水，柴也湿了。',
+    opts:[
+      { lb:'用布补屋顶', cost:{cloth:2}, res:'苏姐爬上屋顶，把布一层层压进缝里。雨还在下，但屋里是干的。' },
+      { lb:'拿木头加固', cost:{wood:4}, res:'你们加了几根横梁。屋顶没塌，但柴火泡了大半。', bad:{wood:2} },
+      { lb:'等雨停', need:{build:'stonehouse'}, cost:{}, res:'石屋不漏。你们在屋里听着雨，谁也没说话。' },
+      { lb:'就这么淋着', cost:{}, warn:'会走一个人', res:'有人咳了一夜。第二天，一个还没住下的人走了。', bad:{pop:1} }
+    ]},
+  { id:'stray', tier:1, title:'门口来了个流民',
+    text:'一个瘦得脱形的男人站在镇口，说他什么都能干。',
+    opts:[
+      { lb:'给他一顿饭', cost:{meat:2}, res:'他吃得很慢，像怕吃完就没了。走的时候，他在门口放下了两捆柴。', good:{wood:2} },
+      { lb:'收下他', need:{room:true}, cost:{meat:1}, res:'他留下了。名字没问，先叫他「新来的」。', good:{extraPop:1} },
+      { lb:'让他走', cost:{}, res:'他点点头，往山那边去了。你不知道他能不能走到下一个镇子。', bad:{safe:1} }
+    ]},
+  { id:'trader', tier:1, title:'行商路过',
+    text:'一个推独轮车的人，车上有铁，也有盐。',
+    opts:[
+      { lb:'用肉换铁', cost:{meat:3}, res:'换了两块铁。他说下个月还来。', good:{iron:2} },
+      { lb:'用木换肉', cost:{wood:6}, res:'他挑了几根直的，丢下半扇腌肉。', good:{meat:3} },
+      { lb:'不换', cost:{}, res:'他推着车走了。车轮声在土路上响了很久。' }
+    ]},
+  { id:'plague', tier:2, title:'镇里有人发烫',
+    text:'第一个人是苏姐。第二天，是白先生。',
+    opts:[
+      { lb:'去井边取水', need:{build:'well'}, cost:{}, res:'井水凉。你们把水烧开，一勺一勺喂。三天后，人都退了烧。' },
+      { lb:'用布烧水煮', cost:{cloth:3, meat:1}, res:'布不够，拆了两件旧衣裳。人保住了，但镇子元气伤了些。', bad:{safe:1} },
+      { lb:'硬扛', cost:{}, warn:'会死人', res:'扛过去了。两个人没起来。房子还在，只是空了两间。', bad:{pop:2, safe:2} }
+    ]},
+  { id:'thief', tier:2, title:'夜里有贼',
+    text:'存粮的地方被人翻过，地上有泥脚印。',
+    opts:[
+      { lb:'让灯守夜', need:{prof:'sleep'}, cost:{}, res:'第二夜，灯在粮仓后头站了一整晚。再没人来过。' },
+      { lb:'养条狗', cost:{meat:2}, res:'狗吃得比人还多，但夜里一有动静就叫。' , good:{safe:1} },
+      { lb:'把粮换成铁箱', cost:{iron:4}, res:'箱子钉死了。贼来了，什么也没搬走。' },
+      { lb:'算了', cost:{}, warn:'丢三块肉', res:'少了三块肉。你不知道是谁拿的，也不好问。', bad:{meat:3} }
+    ]},
+  { id:'drought', tier:2, title:'两个月没下雨',
+    text:'河床露了石头，地裂开了口子。',
+    opts:[
+      { lb:'从井里取水', need:{build:'well'}, cost:{}, res:'井没干。你们一桶一桶提上来，浇在最要紧的那几块地上。' },
+      { lb:'去更远的河挑水', cost:{}, res:'一天只能挑两趟。人累得说不出话，<b>这一整天没人干活</b>。', bad:{halve:true} },
+      { lb:'放弃这一季', cost:{}, warn:'损失惨重', res:'地里什么都没长出来。有人站在田边看了很久。', bad:{meat:3, safe:1} }
+    ]},
+  { id:'collapse', tier:2, title:'矿洞塌了',
+    text:'白先生带人采石，回来时少了一个人，多了三根断指。',
+    opts:[
+      { lb:'用布包扎', cost:{cloth:3}, res:'苏姐把布撕成条。血止住了，但那只手是废了。' },
+      { lb:'送他去山下', cost:{meat:2}, res:'两个人抬着他走了。回来时天黑了，说送到了。', bad:{safe:1} },
+      { lb:'给他一笔钱', cost:{coin:5}, res:'他拿着钱，说要去城里看大夫。走之前，他把凿子留给了白先生。' }
+    ]},
+  { id:'wedding', tier:1, title:'镇上有人要成亲',
+    text:'是苏姐和一个外村来的木匠。她说想请大家吃一顿。',
+    opts:[
+      { lb:'办三桌', cost:{meat:5, coin:3}, res:'肉炖了很久。灯把镇子照得比哪一夜都亮。那天之后，人心定了很多。', good:{safe:3, happy:3} },
+      { lb:'简单吃一顿', cost:{meat:2}, res:'一人一碗。木匠说，这里像个能过日子的地方。', good:{safe:1} },
+      { lb:'先不办', cost:{}, res:'苏姐说没事。第二天她照常去洗布。', bad:{safe:1} }
+    ]},
+  { id:'recruit', tier:2, title:'山那边的镇子来要人',
+    text:'来了两个骑马的人，说那边缺人手，愿意给钱。',
+    opts:[
+      { lb:'让他们带人走', cost:{}, warn:'走一个人', res:'走了一个。钱袋沉了一点。', good:{coin:8}, bad:{pop:1} },
+      { lb:'留人', cost:{coin:6}, res:'你给了钱，说这里也需要人。他们收了钱，走了。' },
+      { lb:'跟他们换铁', cost:{}, warn:'走两个人', res:'用两个人换了一车下脚料。你知道这笔账不划算。', good:{iron:6}, bad:{pop:2} }
+    ]},
+  { id:'traveler', tier:1, title:'迷路的人',
+    text:'一个背着书箱的年轻人，说要去京城，走错了路。',
+    opts:[
+      { lb:'留他住一晚', cost:{meat:1}, res:'他讲了一夜外面的事。纸生听得眼睛发亮。', good:{coin:2, safe:1} },
+      { lb:'给他指路', cost:{}, res:'他谢过，往东去了。走前在地上画了半个图，说这条路上有个泉眼。', good:{safe:1} }
+    ]},
+  { id:'snow', tier:3, title:'第一场雪，比往年来得早',
+    text:'雪压下来，屋梁在半夜响了一声。',
+    opts:[
+      { lb:'烧柴保屋', cost:{wood:10}, res:'柴烧了一夜。屋梁撑住了，人都还在。' },
+      { lb:'拆一间空房', cost:{}, warn:'拆掉一栋建筑', res:'拆了一间。木头是干的。但镇子少了一块。', bad:{loseBuild:1} },
+      { lb:'所有人生火挤在一处', cost:{meat:4}, res:'一间屋里挤了十几个人。没人冻死，但有人病了一场。', bad:{safe:1} }
+    ]}
+];
 
-/* 特殊节点：城市在模仿你 */
-const TRACE_NODE = {
-  t:'这条路你已经走过很多次了。今天，路边的墙上有一行粉笔字，笔迹和你一模一样。',
-  o:[ {lb:'擦掉它', cost:{oil:2}, gain:{}, res:'你擦了很久。擦完之后，墙上还剩一点白。'},
-      {lb:'在旁边写一句别的', cost:{oil:2,nerve:1}, gain:{paper:3}, res:'你写了一句今天的心情。写完觉得有点蠢。'} ]
-};
-const MIRROR_NODE = {
-  t:'路口站着一个人，背对着你。他穿的和你一样，走路的姿势也一样。他在等你先动。',
-  o:[ {lb:'先走', cost:{oil:3,nerve:3}, gain:{metal:5,cloth:5}, res:'你走过去。他也走。走到路口他就不见了，地上留下一盏还亮着的灯。', lit:2},
-      {lb:'往回走', cost:{oil:2}, gain:{}, res:'你没回头，但你知道他跟着。走到楼下，声音就没了。'} ]
-};
+/* ---------- 状态 ---------- */
 
-/* 诱惑节点：刷手机这件事被做成了怪 */
-const TEMPT_NODE = {
-  t:'一扇窗亮着。里面很暖，有电视的声音，还有人在笑。',
-  o:[ {lb:'看一会儿', cost:{nerve:1}, gain:{paper:2,cloth:1}, res:'你站了十分钟。窗里一直在笑，但你听不清在笑什么。', mark:true},
-      {lb:'走开', cost:{oil:1}, gain:{}, res:'你走了。窗还亮着，笑声也跟着你走了一段。'} ]
-};
-
-/* ══════════════ 状态 ══════════════ */
-function blankState(){
-  const city = {};
-  BLOCKS.forEach(b => { city[b.id] = { lit:0, visits:0, drained:0, note:0 }; });
-  city.home.lit = 1;
-  return {
-    v: 3, ver: APP_VER,
-    date: todayKey(),
-    checks: {},           // 今日打卡
-    sleptLast: false,     // 昨天是否早睡 → 今天 +2 油
-    mats: { wood:0, cloth:0, paper:0, metal:0 },
-    build: { shelf:0, sand:0, wall:0, gram:0 },
-    city: city,
-    night: null,
-    clueBank: 0,
-    walker: { gen:1, injuries:0, name:'你' },
-    notes: [],
-    stats: { nights:0, deaths:0, maxDepth:0, totalSteps:0 },
-    history: [],          // 每晚 {block, steps, end}
-    firstRun: true
-  };
-}
 let state = null;
+let tab = 'today';
 
-/* 日期（本地时区，不用 toISOString，避免 UTC 偏移） */
-function todayKey(d){
-  const t = d || new Date();
-  const m = String(t.getMonth()+1).padStart(2,'0');
-  const day = String(t.getDate()).padStart(2,'0');
-  return t.getFullYear() + '-' + m + '-' + day;
+function cap(){
+  return 3 + (state.build.hut || 0) * 3 + (state.build.stonehouse || 0) * 5;
+}
+function rank(){
+  const n = popCount();
+  if (n >= 16) return { t:'重镇', c:'#b8863a' };
+  if (n >= 10) return { t:'山城', c:'#8a7a58' };
+  if (n >= 6)  return { t:'集镇', c:'#6f7a5e' };
+  if (n >= 3)  return { t:'小村', c:'#7a8a6a' };
+  if (n >= 1)  return { t:'荒村', c:'#9a8f7d' };
+  return { t:'空地', c:'#b0a694' };
+}
+function dwellers(){
+  const spare = Math.max(0, cap() - state.pop.length);
+  return Math.min(spare, (state.build.hut || 0) * 2 + (state.build.stonehouse || 0) * 3);
+}
+function popCount(){
+  return state.pop.length + dwellers();
+}
+function perDay(){ return Math.ceil(popCount() * 0.5 * (state.build.granary ? 0.6 : 1)); }
+function has(prof){
+  if (prof === 'safe') return state.pop.some(p => p.id === 'sleep');
+  return state.pop.some(p => p.id === prof);
+}
+function room(){ return popCount() < cap(); }
+
+const STEPS = [[0,'破屋'],[1,'荒村'],[3,'小村'],[6,'集镇'],[10,'山城'],[16,'重镇']];
+function rankBar(){
+  const n = popCount();
+  let cur = 0, next = null;
+  for (let i = 0; i < STEPS.length; i++){
+    if (n >= STEPS[i][0]) cur = i;
+    else { next = STEPS[i]; break; }
+  }
+  const lo = STEPS[cur][0];
+  const hi = next ? next[0] : lo + 1;
+  const pct = next ? Math.min(100, Math.round((n - lo) / (hi - lo) * 100)) : 100;
+  const label = next
+    ? '再招 ' + (hi - n) + ' 人，镇子升为「' + next[1] + '」'
+    : '这里已经是这一带最热闹的地方了';
+  return '<div class="rk"><div class="rk-t"><b>' + STEPS[cur][1] + '</b><span>' + label + '</span></div>' +
+    '<div class="rk-b"><i style="width:' + pct + '%"></i></div></div>';
+}
+
+function todayStr(){
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+function fresh(){
+  return {
+    v: 4, ver: APP_VER,
+    day: 1,
+    lastNight: '',
+    checks: {},
+    res: { wood: 0, stone: 0, meat: 5, cloth: 0, iron: 0, coin: 0 },
+    pop: [],
+    build: { hut:0, stonehouse:0, trap:0, granary:0, well:0, forge:0, market:0, tower:0, shrine:0 },
+    safe: 0, happy: 0,
+    log: [],
+    pend: null,
+    came: [],
+    legacy: null
+  };
 }
 
 function load(){
-  let raw = null;
-  try{ raw = localStorage.getItem(SAVE); }catch(e){}
-  if (raw){
-    try{
-      const s = JSON.parse(raw);
-      if (s && s.v === 3){ state = s; }
-    }catch(e){}
-  }
-  if (!state){
-    state = blankState();
-    // 把 v2 院子的记录变成一段"前人笔记"
-    const legacy = readLegacy();
-    if (legacy) state.notes.push({
-      who: '另一个人', gen: 0,
-      text: '前一个人在墙上留下过记录：他做过 ' + legacy + ' 件事，但没有一件做完。'
-    });
-    save();
-  }
-  rollDay();
-}
-function readLegacy(){
   try{
-    const raw = localStorage.getItem('rike_yard_v2');
-    if (!raw) return 0;
-    const o = JSON.parse(raw);
-    const n = Object.values(o.yard || {}).reduce((a,b) => a + (b||0), 0);
-    return n > 0 ? n : 0;
-  }catch(e){ return 0; }
+    const raw = localStorage.getItem(SAVE);
+    if (raw){
+      const s = JSON.parse(raw);
+      if (s && s.v === 4){ state = s; return; }
+    }
+    // 旧档：转成一条前人记录
+    let old = null;
+    for (const k of OLD_KEYS){
+      try{ const r = localStorage.getItem(k); if (r){ old = JSON.parse(r); break; } }catch(e){}
+    }
+    state = fresh();
+    if (old){
+      const bits = [];
+      if (old.days){
+        const n = Object.keys(old.days).length;
+        bits.push('他在这里待了 ' + n + ' 天');
+      }
+      if (old.checks){
+        const n = Object.keys(old.checks).length;
+        bits.push('做过 ' + n + ' 件事');
+      }
+      if (old.points) bits.push('攒下 ' + old.points + ' 分');
+      if (old.log && old.log.length) bits.push('留下了 ' + old.log.length + ' 条痕迹');
+      state.legacy = bits.length ? bits.join('，') : null;
+    }
+  }catch(e){ state = fresh(); }
 }
+
 function save(){
   try{ localStorage.setItem(SAVE, JSON.stringify(state)); }catch(e){}
 }
 
-/* 跨日：重置打卡、结算早睡奖励、街区恢复 */
-function rollDay(){
-  const k = todayKey();
-  if (state.date === k) return;
-  state.date = k;
-  state.checks = {};
-  state.night = null;
-  // 街区枯竭自然恢复
-  Object.keys(state.city).forEach(id => {
-    const b = state.city[id];
-    if (b.drained > 0) b.drained -= 1;
+/* ---------- 小镇绘制 ---------- */
+
+function skyColors(){
+  const h = new Date().getHours();
+  if (h >= 6 && h < 17) return { a:'#cfe3ee', b:'#eef3e6', ground:'#e6dfcb', g2:'#d6cdb2', night:false };
+  if (h >= 17 && h < 20) return { a:'#f0c69a', b:'#f6e3c8', ground:'#dfd4ba', g2:'#cdbf9f', night:false };
+  return { a:'#2b3350', b:'#41496a', ground:'#3b3a44', g2:'#2f2e37', night:true };
+}
+
+function houseSVG(cx, base, w, h, roof, wall, night, lit){
+  const x = cx - w / 2, y = base - h;
+  const rh = h * 0.46;
+  let s = '';
+  s += '<ellipse cx="'+cx+'" cy="'+base+'" rx="'+(w*0.6)+'" ry="2.4" fill="'+(night?'#24232b':'#bfb39a')+'" opacity=".38"/>';
+  s += '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+wall+'" rx="1"/>';
+  s += '<path d="M'+(x-4)+' '+(y+1)+' L'+cx+' '+(y-rh)+' L'+(x+w+4)+' '+(y+1)+' Z" fill="'+roof+'"/>';
+  s += '<path d="M'+(x-4)+' '+(y+1)+' L'+cx+' '+(y-rh)+' L'+(x+w+4)+' '+(y+1)+'" stroke="rgba(0,0,0,.1)" stroke-width=".7" fill="none"/>';
+  s += '<rect x="'+(cx-2.8)+'" y="'+(base-h*0.36)+'" width="5.6" height="'+(h*0.36)+'" fill="'+(night?'#37322b':'#8a7659')+'" rx=".6"/>';
+  const wy = y + h*0.24;
+  [cx - w*0.29, cx + w*0.29].forEach(wx => {
+    s += '<rect x="'+(wx-2.2)+'" y="'+wy+'" width="4.4" height="4.4" fill="'+(night ? (lit?'#f2d489':'#4d5163') : '#f0e7d0')+'" rx=".5"'+(night&&lit?' class="flick"':'')+'/>';
   });
-  state.sleptLast = !!state._sleptToday;
-  state._sleptToday = false;
-  state.nightDay = null;
-  state.nightsToday = 0;
-  save();
+  return s;
 }
 
-/* ══════════════ 筹码计算 ══════════════ */
-function chips(){
-  const c = state.checks;
-  const n = TASKS.filter(t => c[t.id]).length;
-  const shelfLv = state.build.shelf;
-  // 同一天重复入夜：体力透支，第二次起每晚扣 2 滴，最低 1 滴
-  const times = (state.nightDay === state.date) ? (state.nightsToday || 0) : 0;
-  const base = 2 + n + (c.wake ? 1 : 0) - (c.sleep ? 1 : 0) + (state.sleptLast ? 2 : 0);
-  return {
-    count: n,
-    oil: Math.max(1, base - times * 2),
-    nerve: (c.train ? 2 : 0) + (c.quit ? 1 : 0),
-    clue: (c.study ? 1 : 0) + (c.read ? 2 : 0) + shelfLv + (state.clueBank || 0),
-    stealth: c.shower ? 1 : 0
-  };
-}
+function townSVG(){
+  const c = skyColors();
+  const n = c.night;
+  const B = state.build;
+  const people = popCount();
+  let s = '<svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice">';
 
-/* ══════════════ 城市逻辑 ══════════════ */
-function blockState(id){ return state.city[id]; }
-function isUnlocked(b){
-  if (!b.unlock) return true;
-  return blockState(b.unlock).lit >= 1;
-}
-function unlockedList(){ return BLOCKS.filter(isUnlocked); }
+  s += '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">' +
+       '<stop offset="0" stop-color="'+c.a+'"/><stop offset="1" stop-color="'+c.b+'"/></linearGradient>' +
+       '<linearGradient id="grd" x1="0" y1="0" x2="0" y2="1">' +
+       '<stop offset="0" stop-color="'+c.ground+'"/><stop offset="1" stop-color="'+c.g2+'"/></linearGradient></defs>';
+  s += '<rect width="360" height="200" fill="url(#sky)"/>';
 
-/* 产出：越走越穷 */
-function yieldOf(bid){
-  const b = state.city[bid];
-  const def = BLOCKS.find(x => x.id === bid);
-  const base = 3 + def.dist;
-  const v = Math.max(1, Math.round(base * (1 - b.drained * 0.15)));
-  return { mat: def.res, n: v };
-}
-/* 危险度：越走越安全，但暗处更险 */
-function dangerOf(bid){
-  const b = state.city[bid];
-  const def = BLOCKS.find(x => x.id === bid);
-  return Math.max(0, def.danger + (1 - b.lit/3) * 2 - b.drained * 0.2);
-}
-
-/* ══════════════ 入夜 ══════════════ */
-function startNight(startId){
-  const c = chips();
-  // 记一次「今晚的次数」，同一天再来一次就要透支
-  if (state.nightDay !== state.date){ state.nightDay = state.date; state.nightsToday = 0; }
-  state.nightsToday = (state.nightsToday || 0) + 1;
-  const b = state.city[startId];
-  state.night = {
-    start: startId, cur: startId, steps: 0,
-    oil: c.oil, oilMax: c.oil,
-    nerve: c.nerve, clue: c.clue, stealth: c.stealth,
-    carried: { wood:0, cloth:0, paper:0, metal:0 },
-    node: null, lastBlock: startId, ended: false
-  };
-  b.visits += 1;
-  nextNode();
-  save();
-  render();
-}
-
-/* 抽节点 */
-function pickNode(){
-  const n = state.night;
-  const bid = n.cur;
-  const b = state.city[bid];
-  const def = BLOCKS.find(x => x.id === bid);
-
-  // 模仿机制：同街区到访 6 次 → 镜中人；3 次 → 痕迹
-  if (b.visits >= 6 && !b.mirrorShown){
-    b.mirrorShown = true;
-    return MIRROR_NODE;
-  }
-  if (b.visits >= 3 && !b.traceShown){
-    b.traceShown = true;
-    return TRACE_NODE;
-  }
-  // 诱惑节点：低概率
-  if (Math.random() < 0.12) return TEMPT_NODE;
-
-  const pool = NODES[bid] || NODES.home;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-function nextNode(){
-  const n = state.night;
-  if (n.oil <= 0){ endNight('oil'); return; }
-  n.node = pickNode();
-}
-
-/* 邻接表：能走到哪 */
-const ADJ = {
-  home:['shop','b3','shed'], shop:['cross'], b3:['under'], shed:['yard'],
-  cross:['post'], under:['bank'], yard:[], post:['sub'], bank:['shell'],
-  shell:['edge'], sub:[], edge:[]
-};
-function neighbors(id){
-  const out = new Set(ADJ[id] || []);
-  Object.keys(ADJ).forEach(k => { if (ADJ[k].includes(id)) out.add(k); });
-  return [...out].filter(x => isUnlocked(BLOCKS.find(b => b.id === x)));
-}
-
-/* ══════════════ 选项执行 ══════════════ */
-function canAfford(o){
-  const n = state.night;
-  const c = o.cost || {};
-  if ((c.oil||0) > n.oil) return false;
-  if ((c.nerve||0) > n.nerve) return false;
-  if ((c.clue||0) > n.clue) return false;
-  return true;
-}
-
-function chooseOpt(idx){
-  const n = state.night;
-  if (!n || n.ended) return;
-  const node = n.node;
-  const o = node.o[idx];
-  if (!o || !canAfford(o)){ toast('这东西你还拿不动'); return; }
-
-  const c = o.cost || {};
-  n.oil   -= (c.oil || 0);
-  n.nerve -= (c.nerve || 0);
-  n.clue  -= (c.clue || 0);
-  n.steps += 1;
-
-  // 材料入袋
-  const g = o.gain || {};
-  let got = 0;
-  Object.keys(g).forEach(k => { n.carried[k] = (n.carried[k]||0) + g[k]; got += g[k]; });
-
-  // 街区状态：到访 +1、枯竭 +1（若拿到东西）、亮度按选项
-  const b = state.city[n.cur];
-  const def = BLOCKS.find(x => x.id === n.cur);
-  if (got > 0){
-    b.drained = Math.min(5, b.drained + 1);
-    if (o.lit) b.lit = Math.min(3, b.lit + o.lit);
-    else b.lit = Math.min(3, b.lit + 0.5);
-  }
-  // 诱惑节点：这个街区"记住"你
-  if (o.mark){
-    b.drained = Math.min(5, b.drained + 1);
-    b.watched = (b.watched||0) + 1;
+  if (n){
+    for (let i = 0; i < 30; i++){
+      const x = (i * 53 + 17) % 356, y = (i * 29 + 9) % 56;
+      s += '<circle cx="'+x+'" cy="'+y+'" r="'+(i % 3 === 0 ? 0.9 : 0.55)+'" fill="#e8e4d8" opacity="'+(0.22 + (i % 5) * 0.11)+'"/>';
+    }
+    s += '<circle cx="310" cy="26" r="8.5" fill="#f4e9c8" opacity=".95"/><circle cx="314" cy="23" r="8" fill="'+c.a+'"/>';
+  } else {
+    s += '<circle cx="306" cy="28" r="11" fill="#f7e6b8" opacity=".7"/>';
   }
 
-  state.stats.totalSteps = (state.stats.totalSteps||0) + 1;
-  state.stats.maxDepth = Math.max(state.stats.maxDepth||0, n.steps);
+  s += '<path d="M0 72 L44 44 L82 64 L124 38 L166 62 L208 42 L252 64 L296 40 L338 60 L360 50 L360 100 L0 100 Z" fill="'+(n?'#3a3f57':'#bcc9b6')+'" opacity=".8"/>';
+  s += '<path d="M0 84 L56 64 L108 80 L164 58 L220 78 L282 60 L360 80 L360 104 L0 104 Z" fill="'+(n?'#33384c':'#aaba9f')+'" opacity=".92"/>';
 
-  // 结算文本
-  showResult(o.res, got ? gainText(g) : '');
-  save();
-  renderBar();
-}
+  s += '<rect x="0" y="92" width="360" height="108" fill="url(#grd)"/>';
 
-function gainText(g){
-  return Object.keys(g).filter(k => g[k] > 0)
-    .map(k => MATS[k].name + ' +' + g[k]).join(' · ');
-}
-
-/* 结果页 */
-function showResult(text, gains){
-  openSheet(
-    '<h3>你做了什么</h3>' +
-    '<div class="body">' + text + '</div>' +
-    (gains ? '<div class="body" style="color:var(--acc);font-weight:600">' + gains + '</div>' : '') +
-    '<button class="btn primary" data-act="after-node">继续</button>'
-  );
-}
-
-function afterNode(){
-  const n = state.night;
-  closeSheet();
-  if (n.oil <= 0){ endNight('oil'); return; }
-  // 每 2 步给一次「换地方」的机会
-  if (n.steps > 0 && n.steps % 2 === 0){
-    n.pendingMove = true;
-    render();
-    return;
-  }
-  nextNode();
-  render();
-}
-
-/* 移动 */
-function moveTo(bid){
-  const n = state.night;
-  if (n.oil < 1){ toast('油不够走过去'); return; }
-  n.oil -= 1;
-  n.cur = bid;
-  n.steps += 1;
-  n.pendingMove = false;
-  state.city[bid].visits += 1;
-  nextNode();
-  save();
-  render();
-}
-
-/* ══════════════ 结束一夜 ══════════════ */
-function endNight(reason){
-  const n = state.night;
-  if (!n || n.ended) return;
-  n.ended = true;
-
-  let keepRate = 1;
-  let why = '';
-  if (reason === 'home'){
-    why = '你自己决定回来了。灯还够，路还在那儿。';
-  } else if (reason === 'oil'){
-    const sand = state.build.sand;
-    keepRate = [0.5, 0.7, 0.85, 1][sand] || 0.5;
-    why = keepRate >= 1
-      ? '灯油烧干了。但沙袋挡着，东西一样没少。'
-      : '灯油烧干了。你摸黑走回来，掉了一些东西。';
-  } else if (reason === 'hurt'){
-    keepRate = 0.5;
-    why = '你身上不够硬，硬闯的时候受了伤。回来的路上掉了东西。';
+  if (B.stonehouse > 0 || B.market > 0){
+    s += '<path d="M-10 196 Q100 188 190 192 T370 186" stroke="'+(n?'#4c4a57':'#c6bb9e')+'" stroke-width="10" fill="none" opacity=".5"/>';
+    s += '<path d="M-10 196 Q100 188 190 192 T370 186" stroke="'+(n?'#585664':'#d3c9ad')+'" stroke-width="3.5" fill="none" opacity=".5" stroke-dasharray="3 6"/>';
   }
 
-  // 材料入库
-  const added = {};
-  Object.keys(n.carried).forEach(k => {
-    const v = Math.floor((n.carried[k]||0) * keepRate);
-    if (v > 0){ state.mats[k] = (state.mats[k]||0) + v; added[k] = v; }
+  // 镇子外围：人多了才有
+  if (people >= 9){
+    for (let i = 0; i < 10; i++){
+      const bx = 6 + i * 36 + (i % 3) * 5, by = 134 - (i % 2) * 6;
+      s += '<path d="M'+bx+' '+by+' l9 -7 l9 7 Z" fill="'+(n?'#43485a':'#c0b69c')+'" opacity=".42"/>';
+    }
+  }
+
+  if (B.granary) s += granarySVG(108, 136, n);
+  if (B.shrine)  s += shrineSVG(246, 138, n);
+  if (B.tower)   s += towerSVG(318, 136, n);
+  if (B.well)    s += wellSVG(44, 140, n);
+
+  // 起点：那间破屋（一栋房都没盖时才有）
+  if (!B.hut && !B.stonehouse){
+    const bx = 58, bb = 184;
+    s += '<ellipse cx="'+bx+'" cy="'+bb+'" rx="20" ry="2.6" fill="'+(n?'#24232b':'#bfb39a')+'" opacity=".38"/>';
+    s += '<rect x="'+(bx-15)+'" y="'+(bb-30)+'" width="30" height="30" fill="'+(n?'#4a453f':'#dccdb0')+'" rx="1"/>';
+    s += '<path d="M'+(bx-21)+' '+(bb-30)+' L'+(bx-4)+' '+(bb-50)+' L'+(bx+6)+' '+(bb-42)+' L'+(bx+11)+' '+(bb-46)+' L'+(bx+21)+' '+(bb-30)+' Z" fill="'+(n?'#4e3d2a':'#7d5c3e')+'"/>';
+    s += '<rect x="'+(bx-9)+'" y="'+(bb-30)+'" width="4.5" height="4.5" fill="'+(n?'#f2d489':'#efe6cf')+'"'+(n?' class="flick"':'')+'/>';
+    s += '<rect x="'+(bx-2.6)+'" y="'+(bb-13)+'" width="5.2" height="13" fill="'+(n?'#37322b':'#8a7659')+'"/>';
+    s += '<path d="M'+(bx+8)+' '+(bb-9)+' l5 -8" stroke="'+(n?'#3b372f':'#a99a7d')+'" stroke-width="1.4" fill="none"/>';
+  }
+
+  const slots = [30, 90, 150, 210, 270, 330];
+  const base = 190;
+  let k = 0;
+  const roofs = n
+    ? ['#5a4632', '#634d38', '#54412f']
+    : ['#7d5c3e', '#8a6644', '#71523a'];
+  for (let i = 0; i < B.hut; i++, k++)
+    s += houseSVG(slots[k], base, 30, 34, roofs[i % 3], n?'#4f4a44':'#e9dcc0', n, true);
+  for (let i = 0; i < B.stonehouse; i++, k++)
+    s += houseSVG(slots[k], base, 38, 44, n?'#454b5c':'#94614e', n?'#5e5e68':'#d8d8ce', n, true);
+  if (B.forge){
+    s += houseSVG(slots[k], base, 34, 38, n?'#4e4038':'#7a5a42', n?'#5a544e':'#d3c9b3', n, true);
+    s += '<rect x="'+(slots[k]+10)+'" y="'+(base-46)+'" width="5" height="11" fill="'+(n?'#4a453f':'#a99d86')+'"/>';
+    s += '<path class="smoke" d="M'+(slots[k]+12.5)+' '+(base-47)+' q4 -8 0 -15" stroke="#c8c2b4" stroke-width="1.7" fill="none" opacity=".5"/>';
+    k++;
+  }
+  for (let i = 0; i < (B.trap || 0); i++){
+    const tx = 236 + i * 12;
+    s += '<path d="M'+tx+' 194 l5 -4 l5 4" stroke="'+(n?'#8a8068':'#8a7a58')+'" stroke-width="1.3" fill="none" opacity=".7"/>';
+  }
+
+  for (let i = 0; i < Math.min(people, 18); i++){
+    const px = 30 + ((i * 37) % 110) + Math.floor(i / 4) * 62, py = 198 - ((i % 3) * 5);
+    const col = n ? '#ded7c6' : '#5f5749';
+    s += '<g class="walk" style="animation-delay:'+(i * 0.55)+'s">' +
+      '<circle cx="'+px+'" cy="'+(py-7)+'" r="2.4" fill="'+col+'"/>' +
+      '<path d="M'+px+' '+(py-4.6)+' L'+px+' '+py+' M'+px+' '+(py-2.4)+' L'+(px-2.3)+' '+(py-.6)+' M'+px+' '+(py-2.4)+' L'+(px+2.3)+' '+(py-.6)+'" stroke="'+col+'" stroke-width="1.2" fill="none"/></g>';
+  }
+
+  const coming = TASKS.filter(t => state.checks[t.id] && !state.pop.some(p => p.id === t.id) && (!t.need || state.build[t.need]));
+  coming.forEach((t, i) => {
+    const px = 42 + i * 28, py = 176;
+    const cc = n ? '#efe9d8' : '#6b6152';
+    s += '<g opacity=".45"><circle cx="'+px+'" cy="'+(py-7)+'" r="2.5" fill="none" stroke="'+cc+'" stroke-width="1" stroke-dasharray="2 2"/>' +
+      '<path d="M'+px+' '+(py-4.4)+' L'+px+' '+py+' M'+px+' '+(py-2.4)+' L'+(px-2.3)+' '+(py-.6)+' M'+px+' '+(py-2.4)+' L'+(px+2.3)+' '+(py-.6)+'" stroke="'+cc+'" stroke-width="1" stroke-dasharray="2 2" fill="none"/></g>';
   });
 
-  // 线索银行：本夜没花完的线索留一半
-  state.clueBank = Math.floor(n.clue / 2);
-
-  state.stats.nights += 1;
-  state.history.push({ date: state.date, block: n.start, steps: n.steps, end: reason });
-  if (state.history.length > 60) state.history.shift();
-
-  if (reason === 'hurt'){
-    state.walker.injuries += 1;
-    if (state.walker.injuries >= 3) return die();
+  if (people >= 3){
+    const fx = 200, fy = 198;
+    s += '<circle cx="'+fx+'" cy="'+(fy-2)+'" r="8" fill="#e8a04a" opacity=".14"/>';
+    s += '<path class="flick" d="M'+fx+' '+(fy-1)+' l-2.6 -4.4 l2 .9 l.6 -4.6 l1.8 4.6 l1.5 -.9 Z" fill="#e8a04a"/>';
   }
 
-  state.night = null;
-  save();
-  rollDay();
-  render();
+  if (people >= 5){
+    s += '<path class="smoke" d="M92 128 q5 -9 0 -16 q-5 -8 1 -15" stroke="#cfc9ba" stroke-width="1.6" fill="none" opacity=".3"/>';
+    s += '<path class="smoke" style="animation-delay:1.4s" d="M148 126 q5 -9 0 -16 q-5 -8 1 -15" stroke="#cfc9ba" stroke-width="1.6" fill="none" opacity=".24"/>';
+  }
 
-  const g = Object.keys(added).map(k => MATS[k].name + ' +' + added[k]).join('  ');
-  openSheet(
-    '<h3>回来了</h3>' +
-    '<div class="body">' + why + '</div>' +
-    (g ? '<div class="body" style="color:var(--acc);font-weight:600">带回：' + g + '</div>'
-       : '<div class="body" style="color:var(--ink3)">什么都没带回来。</div>') +
-    '<div class="body" style="color:var(--ink3);font-size:13px">今晚走了 ' + n.steps + ' 步。</div>' +
-    '<button class="btn primary" data-act="close-sheet">好</button>'
-  );
+  if (B.market){
+    const mx = 170, mb = 154;
+    s += '<ellipse cx="'+mx+'" cy="'+mb+'" rx="24" ry="3" fill="'+(n?'#24232b':'#bfb39a')+'" opacity=".3"/>';
+    s += '<rect x="'+(mx-18)+'" y="'+(mb-14)+'" width="36" height="14" fill="'+(n?'#5b5348':'#ddceac')+'"/>';
+    s += '<path d="M'+(mx-21)+' '+(mb-14)+' L'+(mx-18)+' '+(mb-27)+' L'+(mx+18)+' '+(mb-27)+' L'+(mx+21)+' '+(mb-14)+' Z" fill="'+(n?'#7a5a48':'#b8705a')+'"/>';
+    s += '<path d="M'+(mx-15)+' '+(mb-14)+' L'+(mx-12)+' '+(mb-27)+'" stroke="rgba(255,255,255,.32)" stroke-width="4"/>';
+    s += '<path d="M'+(mx-3)+' '+(mb-14)+' L'+(mx)+' '+(mb-27)+'" stroke="rgba(255,255,255,.32)" stroke-width="4"/>';
+    s += '<path d="M'+(mx+9)+' '+(mb-14)+' L'+(mx+12)+' '+(mb-27)+'" stroke="rgba(255,255,255,.32)" stroke-width="4"/>';
+    s += '<path d="M'+mx+' '+(mb-27)+' L'+mx+' '+(mb-35)+'" stroke="#8a7a58" stroke-width="1"/>';
+    s += '<path d="M'+mx+' '+(mb-35)+' l7 2.2 l-7 2.2 Z" fill="#c8875a"/>';
+  }
+
+  s += '</svg>';
+  const rk = rank();
+  s += '<div class="cap">' + rk.t + '</div>';
+  s += '<div class="pop">' + people + ' / ' + cap() + ' 人</div>';
+  return s;
 }
 
-/* 死亡：不清零，留给下一代 */
-function die(){
-  const n = state.night;
-  const lastBlock = BLOCKS.find(b => b.id === n.cur);
-  const mostVisited = Object.keys(state.city)
-    .sort((a,b) => state.city[b].visits - state.city[a].visits)[0];
-  const mostName = BLOCKS.find(b => b.id === mostVisited).name;
-
-  state.notes.push({
-    who: '第 ' + state.walker.gen + ' 个人',
-    gen: state.walker.gen,
-    text: '他最后在' + lastBlock.name + '。他最常走的是' + mostName +
-          '，一共 ' + state.city[mostVisited].visits + ' 次。笔记到这里就断了。'
-  });
-
-  state.stats.deaths += 1;
-  state.walker.gen += 1;
-  state.walker.injuries = 0;
-  state.night = null;
-  // 城市、建造、材料全部保留
-  state.clueBank = 1 + state.build.gram;
-  save();
-  rollDay();
-  render();
-
-  openSheet(
-    '<h3>这一代结束了</h3>' +
-    '<div class="body">你在' + lastBlock.name + '没能回来。<br><br>' +
-    '但城市还在。你点亮的 ' +
-    Object.keys(state.city).filter(id => state.city[id].lit >= 3).length +
-    ' 个街区没有灭。安全屋里的东西也还在。<br><br>' +
-    '下一个人会捡到你的笔记。</div>' +
-    '<button class="btn primary" data-act="close-sheet">继续</button>'
-  );
+function wellSVG(x, base, n){
+  return '<ellipse cx="'+x+'" cy="'+base+'" rx="11" ry="3.6" fill="'+(n ? '#4a4d5c' : '#a99e86')+'"/>' +
+    '<rect x="'+(x-8)+'" y="'+(base-9)+'" width="16" height="9" fill="'+(n ? '#5a5d6b' : '#bdb29a')+'"/>' +
+    '<path d="M'+(x-9)+' '+(base-9)+' l9 -8 l9 8" stroke="'+(n ? '#6e7180' : '#8d8270')+'" stroke-width="1.6" fill="none"/>' +
+    '<rect x="'+(x-1)+'" y="'+(base-17)+'" width="1.6" height="8" fill="'+(n ? '#6e7180' : '#8d8270')+'"/>';
+}
+function granarySVG(x, base, n){
+  return '<ellipse cx="'+x+'" cy="'+base+'" rx="12" ry="3.6" fill="'+(n ? '#4a4d5c' : '#a99e86')+'"/>' +
+    '<path d="M'+(x-11)+' '+base+' L'+(x-11)+' '+(base-16)+' Q'+x+' '+(base-30)+' '+(x+11)+' '+(base-16)+' L'+(x+11)+' '+base+' Z" fill="'+(n ? '#6a6252' : '#c4b394')+'"/>' +
+    '<path d="M'+(x-11)+' '+(base-16)+' Q'+x+' '+(base-30)+' '+(x+11)+' '+(base-16)+'" stroke="'+(n ? '#7d7462' : '#a8967a')+'" stroke-width="1.4" fill="none"/>';
+}
+function towerSVG(x, base, n){
+  return '<rect x="'+(x-7)+'" y="'+(base-30)+'" width="14" height="30" fill="'+(n ? '#55596a' : '#c0bba8')+'"/>' +
+    '<path d="M'+(x-9)+' '+(base-30)+' L'+x+' '+(base-40)+' L'+(x+9)+' '+(base-30)+' Z" fill="'+(n ? '#6e5a4a' : '#9c7a5e')+'"/>' +
+    '<rect x="'+(x-2)+'" y="'+(base-25)+'" width="4" height="5" fill="'+(n ? '#f0cf85' : '#d8dde0')+'"'+(n ? ' class="flick"' : '')+'/>';
+}
+function shrineSVG(x, base, n){
+  return '<rect x="'+(x-13)+'" y="'+(base-13)+'" width="26" height="13" fill="'+(n ? '#5b5348' : '#cbbfa8')+'"/>' +
+    '<path d="M'+(x-17)+' '+(base-13)+' L'+x+' '+(base-26)+' L'+(x+17)+' '+(base-13)+' Z" fill="'+(n ? '#6f5a4b' : '#a8795e')+'"/>' +
+    '<rect x="'+(x-3)+'" y="'+(base-10)+'" width="6" height="10" fill="'+(n ? '#3f3b34' : '#8a7c62')+'"/>' +
+    '<circle cx="'+(x)+'" cy="'+(base-18)+'" r="1.6" fill="#e8c777"/>';
 }
 
-/* ══════════════ 建造 ══════════════ */
-function buildCost(def){
-  const lv = state.build[def.id];
-  if (lv >= 3) return null;
-  return { mat: def.costMat, n: def.costs[lv] };
-}
-function doBuild(id){
-  const def = BUILDS.find(b => b.id === id);
-  const cost = buildCost(def);
-  if (!cost) return;
-  if ((state.mats[cost.mat]||0) < cost.n){ toast(MATS[cost.mat].name + '不够，还差 ' + (cost.n - (state.mats[cost.mat]||0))); return; }
-  state.mats[cost.mat] -= cost.n;
-  state.build[id] += 1;
-  save();
-  render();
-  toast(def.name + ' 升到 ' + state.build[id] + ' 级');
-}
+/* ---------- 渲染 ---------- */
 
-/* ══════════════ 渲染 ══════════════ */
-let tab = 'day';
-
-function renderBar(){
-  const n = state.night;
-  const c = chips();
-  document.getElementById('hd-t').textContent = n ? '夜里' : '夜行';
-  document.getElementById('hd-s').textContent = n ? '路还长' : '天亮着';
-  document.getElementById('hd-n').textContent = n ? n.oil : c.oil;
-  document.getElementById('hd-k').textContent = n ? '滴油（剩）' : '滴灯油';
+function resBar(){
+  const order = ['wood','stone','meat','cloth','iron','coin'];
+  const box = document.getElementById('resbar');
+  let h = '';
+  for (const k of order){
+    const r = RES[k];
+    const v = state.res[k] || 0;
+    const dim = (k === 'iron' && !state.build.forge) || (k === 'coin' && !state.build.market);
+    h += '<div class="res' + (dim ? '' : '') + '" style="' + (dim ? 'opacity:.42' : '') + '">' +
+      '<span class="dot" style="background:' + r.color + '"></span>' +
+      '<b>' + v + '</b><i>' + r.name + '</i></div>';
+  }
+  h += '<div class="res" style="margin-left:auto"><span class="dot" style="background:#8a6a3a"></span><b>' + rank().t + '</b></div>';
+  box.innerHTML = h;
 }
 
 function render(){
-  const n = state.night;
-  document.body.classList.toggle('night', !!n);
+  document.getElementById('dayLabel').textContent = '第 ' + state.day + ' 天';
+  document.getElementById('verLabel').textContent = popCount() + ' / ' + cap() + ' 人 · ' + APP_VER;
+  document.getElementById('town').innerHTML = townSVG();
+  resBar();
+
+  const m = document.getElementById('main');
+  if (tab === 'today')      m.innerHTML = viewToday();
+  else if (tab === 'build') m.innerHTML = viewBuild();
+  else if (tab === 'people')m.innerHTML = viewPeople();
+  else                      m.innerHTML = viewLog();
+
   document.querySelectorAll('#tabs button').forEach(b => {
-    b.classList.toggle('on', !n && b.dataset.tab === tab);
+    b.classList.toggle('on', b.dataset.tab === tab);
   });
-  renderBar();
-  const main = document.getElementById('main');
-  if (n) main.innerHTML = viewNight();
-  else if (tab === 'day') main.innerHTML = viewDay();
-  else if (tab === 'city') main.innerHTML = viewCity();
-  else if (tab === 'home') main.innerHTML = viewHome();
-  else main.innerHTML = viewNotes();
 }
 
-/* ───── 白天 ───── */
-function viewDay(){
-  const c = chips();
-  let h = '<div class="sec">';
-  h += '<div class="sec-h"><span class="x">今天做了什么</span><span class="y">' + c.count + ' / 7</span></div>';
-  h += TASKS.map(t => {
+function viewToday(){
+  const done = TASKS.filter(t => state.checks[t.id]).length;
+  let h = '';
+
+  if (state.legacy && state.day === 1){
+    h += '<div style="background:#f4ecdc;border-radius:12px;padding:12px 14px;font-size:13px;color:#7a6c56;line-height:1.7;margin-bottom:14px">' +
+      '上一本册子留在这里：' + state.legacy + '。<br>册子后面是空的。' +
+      '<div style="color:#a39887;font-size:12px;margin-top:5px">这里从头开始。</div></div>';
+  }
+
+  h += rankBar();
+  h += '<div class="sec-t">今天做的事 <span>' + done + ' / 7</span></div>';
+  h += '<div class="tasks">';
+  for (const t of TASKS){
+    const needB = t.need && !state.build[t.need];
     const on = !!state.checks[t.id];
-    return '<div class="tk' + (on ? ' on' : '') + '" data-task="' + t.id + '">' +
-      '<div class="gl"><svg viewBox="0 0 24 24">' + ICONS[t.icon] + '</svg></div>' +
-      '<div class="bd"><div class="nm">' + t.name + '</div><div class="ds">' + t.desc + '</div></div>' +
-      '<div class="eff">' + (on ? '✓' : t.eff) + '</div></div>';
-  }).join('');
-  h += '</div>';
-
-  h += '<div class="chips">' +
-    '<div class="chip"><div class="v">' + c.oil + '</div><div class="k">灯油</div></div>' +
-    '<div class="chip"><div class="v">' + c.nerve + '</div><div class="k">胆</div></div>' +
-    '<div class="chip"><div class="v">' + c.clue + '</div><div class="k">线索</div></div>' +
-    '<div class="chip"><div class="v">' + c.stealth + '</div><div class="k">隐蔽</div></div>' +
-    '</div>';
-
-  h += '<div class="sec"><div class="note" style="margin:10px 2px 14px">' +
-    (c.count === 0
-      ? '什么都没做也能出门。两滴油，够走到楼下看一眼。'
-      : (c.count >= 6 ? '今天的油很足，能走得很远。' : '做几件，就能走几步。')) +
-    (state.sleptLast ? '<br>昨晚早睡，今天多了两滴。' : '') +
-    (c.clue > 0 ? '<br>线索 ' + c.clue + ' 点：入夜后能看穿一些东西。' : '') +
-    '</div>';
-  h += '<button class="btn primary" data-act="go-night">入夜</button></div>';
-
-  return h;
-}
-
-/* ───── 入夜 ───── */
-function viewNight(){
-  const n = state.night;
-  let h = '<div class="bar">' +
-    '<i>油 <b>' + n.oil + '</b></i>' +
-    '<i>胆 <b>' + n.nerve + '</b></i>' +
-    '<i>线索 <b>' + n.clue + '</b></i>' +
-    (n.stealth ? '<i>隐蔽 <b>' + n.stealth + '</b></i>' : '') +
-    '</div>';
-
-  const def = BLOCKS.find(b => b.id === n.cur);
-
-  if (n.pendingMove){
-    const nb = neighbors(n.cur);
-    h += '<div class="nightwrap"><div class="scene">' +
-      '<p>' + def.name + '。' + def.desc + '</p>' +
-      '<p class="dim">你可以换个地方，也可以回去。</p></div>';
-    nb.forEach(id => {
-      const bd = BLOCKS.find(x => x.id === id);
-      const st = state.city[id];
-      h += '<button class="opt" data-move="' + id + '">' +
-        '<span class="lb">去' + bd.name + '</span>' +
-        '<span class="cost">耗 <b>1</b> 滴油 · 已经走过 ' + st.visits + ' 次 · ' +
-        (st.drained >= 3 ? '基本被捡空了' : '还有点东西') + '</span></button>';
-    });
-    h += '<button class="opt" data-act="end-home"><span class="lb">回家</span>' +
-      '<span class="cost">结束今晚，带走全部</span></button>';
-    h += '</div>';
-    return h;
-  }
-
-  const node = n.node || { t:'', o:[] };
-  h += '<div class="nightwrap"><div class="scene">' +
-    '<p class="dim" style="font-size:12.5px;margin-bottom:12px">' + def.name + ' · 第 ' + (n.steps+1) + ' 步</p>' +
-    '<p>' + node.t + '</p></div>';
-
-  node.o.forEach((o, i) => {
-    const ok = canAfford(o);
-    const cst = [];
-    if (o.cost && o.cost.oil) cst.push('油 −' + o.cost.oil);
-    if (o.cost && o.cost.nerve) cst.push('胆 −' + o.cost.nerve);
-    if (o.cost && o.cost.clue) cst.push('线索 −' + o.cost.clue);
-    if (!cst.length) cst.push('不耗');
-    const gain = o.gain ? Object.keys(o.gain).map(k => MATS[k].name + '+' + o.gain[k]).join(' ') : '';
-    h += '<button class="opt' + (ok ? '' : ' locked') + '" data-opt="' + i + '"' + (ok ? '' : ' disabled') + '>' +
-      '<span class="lb">' + o.lb + '</span>' +
-      '<span class="cost">' + cst.join(' · ') + (gain ? ' · <b>' + gain + '</b>' : '') +
-      (ok ? '' : ' · <b>不够</b>') + '</span></button>';
-  });
-
-  h += '<button class="opt" data-act="end-home" style="border-style:dashed">' +
-    '<span class="lb">回家</span><span class="cost">结束今晚，带走全部</span></button>';
-  h += '</div>';
-  return h;
-}
-
-/* ───── 城市 ───── */
-function viewCity(){
-  const litCnt = Object.keys(state.city).filter(id => state.city[id].lit >= 3).length;
-  let h = '<div class="mapwrap">';
-  h += '<div class="sec-h"><span class="x">这座城</span><span class="y">已点亮 ' + litCnt + ' / 12</span></div>';
-  h += '<div class="citygrid">';
-  BLOCKS.forEach(b => {
-    const st = state.city[b.id];
-    const un = isUnlocked(b);
-    if (!un){
-      h += '<div class="blk unk"><div class="nm">？？？</div><div class="mt"><span>还没走到过</span></div></div>';
-      return;
-    }
-    const dots = [0,1,2].map(i => '<div class="dot' + (st.lit > i ? ' f' : '') + '"></div>').join('');
-    const drained = st.drained >= 4 ? '空' : (st.drained >= 2 ? '少了' : '还有');
-    h += '<div class="blk' + (st.lit>=3?' lit3':'') + '">' +
-      '<div class="nm">' + b.name + '</div>' +
-      '<div class="mt"><span>走过 ' + st.visits + '</span><span>' + drained + '</span></div>' +
-      '<div class="dots">' + dots + '</div></div>';
-  });
-  h += '</div>';
-  h += '<div class="note" style="margin:14px 2px 20px">' +
-    '走过的路会变穷，也会变安全。<br>同一个地方走太多次，它会开始记住你。</div>';
-  h += '</div>';
-  return h;
-}
-
-/* ───── 安全屋 ───── */
-function viewHome(){
-  let h = '<div class="sec"><div class="sec-h"><span class="x">材料</span><span class="y">从夜里带回来的</span></div></div>';
-  h += '<div class="mat-inv">' + Object.keys(MATS).map(k =>
-    '<div><div class="v">' + (state.mats[k]||0) + '</div><div class="k">' + MATS[k].name + '</div></div>'
-  ).join('') + '</div>';
-
-  h += '<div class="sec"><div class="sec-h"><span class="x">能修的东西</span><span class="y">最高 3 级</span></div>';
-  h += BUILDS.map(d => {
-    const lv = state.build[d.id];
-    const cost = buildCost(d);
-    const can = cost && (state.mats[cost.mat]||0) >= cost.n;
-    const lvBar = [0,1,2].map(i => '<i class="' + (lv > i ? 'f' : '') + '"></i>').join('');
-    return '<div class="bd-row">' +
-      '<div class="ic"><svg viewBox="0 0 24 24">' + ICONS[d.icon] + '</svg></div>' +
-      '<div class="bd"><div class="nm">' + d.name + '</div>' +
-      '<div class="ds">' + (lv > 0 ? d.desc[lv-1] : '还没修') + '</div>' +
-      '<div class="lv">' + lvBar + '</div></div>' +
-      (cost
-        ? '<button data-build="' + d.id + '" class="' + (can?'can':'') + '"' + (can?'':' disabled') + '>' +
-          MATS[cost.mat].name + ' ' + cost.n + '</button>'
-        : '<button disabled>满了</button>') +
+    const lockTxt = needB ? (t.need === 'forge' ? '需铁匠铺' : '需集市') : '';
+    h += '<div class="task' + (on ? ' on' : '') + (needB ? ' lock' : '') + '" data-task="' + t.id + '">' +
+      '<div class="chk"></div>' +
+      '<div class="n">' + t.name + '</div>' +
+      '<div class="p">' + t.prof + ' · ' + (t.res === 'safe' ? '治安' : RES[t.res].name + ' +' + yieldOf(t)) + '</div>' +
+      '<div class="who">' + (needB ? lockTxt : (on ? t.who + ' 今夜会来' : t.who)) + '</div>' +
       '</div>';
-  }).join('');
+  }
   h += '</div>';
-  return h;
-}
 
-/* ───── 笔记 ───── */
-function viewNotes(){
-  let h = '<div class="sec"><div class="sec-h"><span class="x">留在这里的话</span><span class="y">第 ' + state.walker.gen + ' 个人</span></div>';
-  h += '<div class="note" style="margin:0 2px 14px">' +
-    '做过 ' + state.stats.nights + ' 个晚上，走了 ' + (state.stats.totalSteps||0) + ' 步。' +
-    (state.stats.deaths ? '<br>有 ' + state.stats.deaths + ' 个人没能回来。' : '') + '</div>';
-
-  if (!state.notes.length){
-    h += '<div class="notes-item"><div class="who">还没有</div>还没人在这里留下过话。</div>';
+  // 容量提示
+  const free = cap() - popCount();
+  if (free <= 0){
+    h += '<div style="margin-top:12px;background:#f9ece4;border:1px solid #e8cdbf;border-radius:11px;padding:11px 13px;font-size:12.5px;color:#9a5f45;line-height:1.65">' +
+      '<b>住不下了。</b>再来的人只能在镇口站一夜，第二天走。<br>建一处能住的地方，他们才会留下。</div>';
   } else {
-    h += state.notes.slice().reverse().map(n =>
-      '<div class="notes-item"><div class="who">' + n.who + '</div>' + n.text + '</div>'
-    ).join('');
+    h += '<div style="margin-top:12px;font-size:12px;color:#9a8f7d">还能再住 ' + free + ' 个人。</div>';
   }
-  h += '</div>';
 
-  h += '<div class="sec" style="margin-top:20px">' +
-    '<button class="btn ghost" data-act="export" style="margin-bottom:9px">导出数据</button>' +
-    '<button class="btn ghost" data-act="import" style="margin-bottom:9px">导入数据</button>' +
-    '<button class="btn ghost danger" data-act="reset">清空全部</button>' +
-    '<div style="text-align:center;font-size:11.5px;color:var(--ink3);padding:14px 0 8px">夜行 ' + APP_VER + '</div>' +
-    '</div>';
+  h += '<div style="margin-top:16px"><button class="btn" data-act="night">过 夜' +
+    '<span class="sub">' + (popCount() ? popCount() + ' 人吃饭，耗 ' + perDay() + ' 肉' : '镇子里还没有人') + '</span></button></div>';
+
+  if (state.lastNight === todayStr()){
+    h += '<div style="text-align:center;font-size:12px;color:#a39887;margin-top:10px">今天已经过完一夜了。明天再来看看。</div>';
+  }
   return h;
 }
 
-/* ══════════════ 弹层 ══════════════ */
-function openSheet(html){
-  document.getElementById('sheet-in').innerHTML = html;
-  document.getElementById('sheet').classList.add('on');
-}
-function closeSheet(){
-  document.getElementById('sheet').classList.remove('on');
-}
-let toastT = null;
-function toast(msg){
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('on');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => el.classList.remove('on'), 1900);
+function yieldOf(t){
+  let n = t.n;
+  if (t.id === 'train') n += (state.build.trap || 0);
+  return n;
 }
 
-/* ══════════════ 选择出发地 ══════════════ */
-function chooseStart(){
-  const list = unlockedList();
-  let h = '<h3>今晚去哪</h3><div class="body">灯油 ' + chips().oil + ' 滴。每走一步烧一滴。</div>';
-  list.forEach(b => {
-    const st = state.city[b.id];
-    h += '<button class="opt" data-start="' + b.id + '">' +
-      '<span class="lb">' + b.name + '</span>' +
-      '<span class="cost">' + b.desc + ' · 去过 ' + st.visits + ' 次</span></button>';
-  });
-  openSheet(h);
+function viewBuild(){
+  let h = '<div class="sec-t">镇子 <span>' + popCount() + ' 人 · 上限 ' + cap() + '</span></div>';
+  for (const b of BUILDS){
+    const lv = state.build[b.id] || 0;
+    if (b.cap && lv >= b.cap) continue;
+    const locked = b.need && !state.build[b.need];
+    const can = !locked && afford(b.cost);
+    let costTxt = '';
+    for (const k in b.cost){
+      const ok = (state.res[k] || 0) >= b.cost[k];
+      costTxt += '<span style="color:' + (ok ? '#8a8070' : '#c08a72') + '">' + RES[k].name + ' ' + b.cost[k] + '</span>';
+    }
+    h += '<div class="bcard">' +
+      '<div class="ic">' + buildIcon(b.icon) + '</div>' +
+      '<div class="bd">' +
+        '<div class="bn">' + b.name + (b.repeat && lv ? '<span class="lv">×' + lv + '</span>' : '') + '</div>' +
+        '<div class="bx">' + (locked ? '需要先有' + BUILD_NAME[b.need] : b.desc) + '</div>' +
+        '<div class="bc">' + costTxt + ' <span style="color:#b8ae9c">· ' + b.eff + '</span></div>' +
+      '</div>' +
+      '<button class="bb" data-build="' + b.id + '"' + (can ? '' : ' disabled') + '>' + (locked ? '锁' : '建') + '</button>' +
+    '</div>';
+  }
+  h += '<div style="margin-top:14px;font-size:12px;color:#9a8f7d;line-height:1.8">' +
+    '资源只有每天过夜时才结算。<br>人越多，吃得越多；人越多，能干的也越多。</div>';
+  return h;
 }
 
-/* ══════════════ 事件 ══════════════ */
+const BUILD_NAME = {};
+BUILDS.forEach(b => BUILD_NAME[b.id] = b.name);
+
+function buildIcon(id){
+  const s = {
+    hut:'<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 20V11l8-6 8 6v9" stroke="#8a6a48" stroke-width="1.7" fill="none"/><path d="M9 20v-5h6v5" stroke="#8a6a48" stroke-width="1.7" fill="none"/></svg>',
+    house:'<svg width="22" height="22" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" stroke="#8d8b85" stroke-width="1.7" fill="none"/><path d="M2 9l10-6 10 6" stroke="#8d8b85" stroke-width="1.7" fill="none"/></svg>',
+    trap:'<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" stroke="#8a7a58" stroke-width="1.6" fill="none"/><path d="M12 5v14M5 12h14" stroke="#8a7a58" stroke-width="1.3"/></svg>',
+    granary:'<svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 20V9c0-3 3-5 7-5s7 2 7 5v11" stroke="#a8967a" stroke-width="1.7" fill="none"/><path d="M5 13h14" stroke="#a8967a" stroke-width="1.4"/></svg>',
+    well:'<svg width="22" height="22" viewBox="0 0 24 24"><ellipse cx="12" cy="17" rx="6" ry="2.4" stroke="#8d8270" stroke-width="1.6" fill="none"/><path d="M6 17V11h12v6M12 11V7" stroke="#8d8270" stroke-width="1.6" fill="none"/></svg>',
+    forge:'<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 20h16M7 20V10h10v10" stroke="#66605c" stroke-width="1.6" fill="none"/><path d="M12 10V5M9 5h6" stroke="#66605c" stroke-width="1.6" fill="none"/></svg>',
+    market:'<svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 9h18l-2 11H5L3 9z" stroke="#b8705a" stroke-width="1.6" fill="none"/><path d="M3 9l2-5h14l2 5" stroke="#b8705a" stroke-width="1.6" fill="none"/></svg>',
+    tower:'<svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 20V8h8v12M6 8l6-4 6 4" stroke="#9c7a5e" stroke-width="1.6" fill="none"/><rect x="11" y="11" width="2.4" height="3" fill="#9c7a5e"/></svg>',
+    shrine:'<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 20V12h16v8M2 12l10-7 10 7" stroke="#a8795e" stroke-width="1.6" fill="none"/><path d="M10 20v-5h4v5" stroke="#a8795e" stroke-width="1.6" fill="none"/></svg>'
+  };
+  return s[id] || '';
+}
+
+function viewPeople(){
+  let h = '<div class="sec-t">住在镇上的 <span>' + popCount() + ' / ' + cap() + '</span></div>';
+  if (!state.pop.length){
+    h += '<div class="empty">还没有人。<br>你把今天该做的事做了，才会有人来。</div>';
+  } else {
+    for (const p of state.pop){
+      const t = TASKS.find(x => x.id === p.id);
+      const col = t ? RES[t.res] && RES[t.res].color || '#8a8f7a' : '#999';
+      h += '<div class="prow">' +
+        '<div class="pav" style="background:' + col + '">' + p.who.slice(0, 1) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="pn">' + p.who + ' <span style="font-weight:400;color:#a39887;font-size:12px">' + (t ? t.prof : '') + '</span></div>' +
+          '<div class="pd">' + (t ? t.lines : '') + '</div>' +
+        '</div>' +
+        '<div class="pq">第 ' + p.since + ' 天<br><span style="color:#b8ae9c">' + (t ? (t.res === 'safe' ? '治安 +1' : RES[t.res].name + ' +' + yieldOf(t)) : '') + '</span></div>' +
+      '</div>';
+    }
+  }
+  const empty = [1,2,3].filter(i => !state.pop.some(p => TASKS.find(t=>t.id===p.id)));
+  if (empty.length){
+    h += '<div class="sec-t" style="margin-top:22px">还没来的人</div>';
+    for (const t of TASKS){
+      if (state.pop.some(p => p.id === t.id)) continue;
+      h += '<div class="prow" style="opacity:.5">' +
+        '<div class="pav" style="background:#cdc4b2">?</div>' +
+        '<div style="flex:1"><div class="pn" style="font-weight:400;color:#8a8070">' + t.prof + ' · <span style="color:#b0a694">未至</span></div>' +
+        '<div class="pd">做完「' + t.name + '」他就会来。</div></div></div>';
+    }
+  }
+  return h;
+}
+
+function viewLog(){
+  let h = '<div class="sec-t">记录 <span>' + state.day + ' 天</span></div>';
+  if (!state.log.length){
+    h += '<div class="empty">还没有发生什么。<br>过一夜，这里就会开始有字。</div>';
+  } else {
+    for (let i = state.log.length - 1; i >= 0; i--){
+      const l = state.log[i];
+      h += '<div class="logrow"><div class="ld">第' + l.d + '天</div><div class="lt">' + l.t + '</div></div>';
+    }
+  }
+  h += '<div style="margin-top:22px"><button class="btn ghost" data-act="export">导出存档</button></div>';
+  h += '<div style="text-align:center;font-size:11.5px;color:#b8ae9c;margin-top:16px;line-height:1.9">' +
+    '小镇 ' + APP_VER + ' · 数据只在这台设备<br>每天过一夜，镇子就会长一点</div>';
+  return h;
+}
+
+/* ---------- 交互 ---------- */
+
+function afford(cost){
+  for (const k in cost) if ((state.res[k] || 0) < cost[k]) return false;
+  return true;
+}
+function pay(cost){
+  for (const k in cost) state.res[k] = (state.res[k] || 0) - cost[k];
+}
+function gain(g){
+  for (const k in g){
+    if (k === 'safe') state.safe += g[k];
+    else if (k === 'happy') state.happy += g[k];
+    else state.res[k] = (state.res[k] || 0) + g[k];
+  }
+}
+
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-task],[data-opt],[data-move],[data-start],[data-build],[data-act],[data-tab]');
-  if (!t) return;
+  const tb = e.target.closest('#tabs button');
+  if (tb){ tab = tb.dataset.tab; render(); window.scrollTo(0, 0); return; }
 
-  if (t.dataset.tab){
-    if (state.night){ toast('天还没亮'); return; }
-    tab = t.dataset.tab;
-    render();
+  const task = e.target.closest('[data-task]');
+  if (task){
+    const id = task.dataset.task;
+    const t = TASKS.find(x => x.id === id);
+    if (t.need && !state.build[t.need]){ toast('还没有' + BUILD_NAME[t.need]); return; }
+    if (state.checks[id]) delete state.checks[id];
+    else state.checks[id] = 1;
+    save(); render(); return;
+  }
+
+  const act = e.target.closest('[data-act]');
+  if (act){
+    const a = act.dataset.act;
+    if (a === 'night') return doNight();
+    if (a === 'export') return doExport();
+    if (a === 'nextday') return closeModal();
+    if (a === 'close') return closeModal();
     return;
   }
-  if (t.dataset.task){
-    const id = t.dataset.task;
-    if (state.checks[id]){
-      delete state.checks[id];
-      if (id === 'sleep') state._sleptToday = false;
-    } else {
-      state.checks[id] = true;
-      if (id === 'sleep') state._sleptToday = true;
-      t.classList.add('pop');
-    }
+
+  const bl = e.target.closest('[data-build]');
+  if (bl){
+    const def = BUILDS.find(b => b.id === bl.dataset.build);
+    if (!def || !afford(def.cost)) return;
+    pay(def.cost);
+    state.build[def.id] = (state.build[def.id] || 0) + 1;
+    const before = popCount();
+    state.log.push({ d: state.day, t: '盖好了' + def.name + '。' });
     save();
+    const grew = popCount() - before;
+    toast(def.name + ' 盖好了' + (grew > 0 ? '，搬来 ' + grew + ' 户人家' : ''));
     render();
     return;
   }
-  if (t.dataset.start !== undefined && t.dataset.start){
-    closeSheet();
-    startNight(t.dataset.start);
-    return;
-  }
-  if (t.dataset.opt !== undefined && t.dataset.opt !== ''){
-    chooseOpt(parseInt(t.dataset.opt, 10));
-    return;
-  }
-  if (t.dataset.move){
-    moveTo(t.dataset.move);
-    return;
-  }
-  if (t.dataset.build){
-    doBuild(t.dataset.build);
-    return;
-  }
 
-  const act = t.dataset.act;
-  if (act === 'go-night'){ chooseStart(); return; }
-  if (act === 'end-home'){ endNight('home'); return; }
-  if (act === 'after-node'){ afterNode(); return; }
-  if (act === 'close-sheet'){ closeSheet(); render(); return; }
-  if (act === 'export'){
-    const data = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-    openSheet('<h3>导出</h3><div class="body">复制下面这段，存到别处。</div>' +
-      '<textarea readonly style="width:100%;height:120px;font-size:11px;border-radius:9px;border:1px solid var(--line);padding:9px;background:var(--card2);color:var(--ink)">' + data + '</textarea>' +
-      '<button class="btn primary" style="margin-top:12px" data-act="close-sheet">好</button>');
-    return;
-  }
-  if (act === 'import'){
-    openSheet('<h3>导入</h3><div class="body">把之前导出的内容粘进来。</div>' +
-      '<textarea id="imp" style="width:100%;height:120px;font-size:11px;border-radius:9px;border:1px solid var(--line);padding:9px;background:var(--card2);color:var(--ink)"></textarea>' +
-      '<button class="btn primary" style="margin-top:12px" data-act="do-import">导入</button>');
-    return;
-  }
-  if (act === 'do-import'){
-    const v = document.getElementById('imp').value.trim();
-    try{
-      const o = JSON.parse(decodeURIComponent(escape(atob(v))));
-      if (!o || o.v !== 3) throw 0;
-      state = o; save(); closeSheet(); render(); toast('导入成功');
-    }catch(err){ toast('这段数据读不出来'); }
-    return;
-  }
-  if (act === 'reset'){
-    if (confirm('清空这个游戏？城市、建造、笔记都会没了。')){
-      state = blankState(); save(); closeSheet(); render(); toast('已经清空');
-    }
+  const opt = e.target.closest('[data-opt]');
+  if (opt){
+    const i = parseInt(opt.dataset.opt, 10);
+    applyOpt(i);
     return;
   }
 });
 
-/* ══════════════ SW 更新 ══════════════ */
-function registerSW(){
-  if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
-  const hadController = !!navigator.serviceWorker.controller;
-  let reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || reloading) return;
-    reloading = true;
-    location.reload();
-  });
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    reg.update().catch(() => {});
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') reg.update().catch(() => {});
-    });
-    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
-  }).catch(() => {});
+/* ---------- 过夜 ---------- */
+
+function doNight(){
+  if (state.lastNight === todayStr()){
+    toast('今天已经过完一夜了');
+    return;
+  }
+  const report = [];
+  let newPeople = [];
+
+  // 1) 招募
+  const want = TASKS.filter(t => state.checks[t.id] && (!t.need || state.build[t.need]));
+  const already = new Set(state.pop.map(p => p.id));
+  for (const t of want){
+    if (already.has(t.id)) continue;
+    if (popCount() < cap()){
+      state.pop.push({ id: t.id, who: t.who, since: state.day });
+      already.add(t.id);
+      newPeople.push(t.who);
+      report.push({ k: t.who + ' 来了', v: t.prof, cls: 'pos' });
+    } else {
+      state.res.wood += 1;
+      report.push({ k: t.who + ' 没地方住，走了', v: '留下 1 木', cls: 'neg' });
+    }
+  }
+
+  // 2) 产出
+  const produced = {};
+  for (const p of state.pop){
+    const t = TASKS.find(x => x.id === p.id);
+    if (!t) continue;
+    if (t.need && !state.build[t.need]) continue;
+    if (t.res === 'safe'){ state.safe += 1; continue; }
+    const n = yieldOf(t);
+    produced[t.res] = (produced[t.res] || 0) + n;
+  }
+  for (const k in produced){
+    state.res[k] = (state.res[k] || 0) + produced[k];
+    report.push({ k: RES[k].name, v: '+' + produced[k], cls: 'pos' });
+  }
+
+  // 3) 消耗
+  const eat = perDay();
+  if (eat > 0){
+    if (state.res.meat >= eat){
+      state.res.meat -= eat;
+      report.push({ k: '吃饭（' + popCount() + ' 人）', v: '−' + eat + ' 肉', cls: 'neg' });
+    } else {
+      const lack = eat - state.res.meat;
+      state.res.meat = 0;
+      report.push({ k: '肉不够', v: '−' + lack, cls: 'neg' });
+      if (state.pop.length){
+        const gone = state.pop.pop();
+        report.push({ k: gone.who + ' 饿着走了', v: '人口 −1', cls: 'neg' });
+      }
+    }
+  }
+
+  // 4) 事件
+  const p = Math.min(0.85, 0.35 + popCount() * 0.04) * (state.build.shrine ? 0.6 : 1);
+  const roll = rnd();
+  let evt = null;
+  if (roll < p){
+    const pool = EVENTS.filter(e => e.tier <= (popCount() >= 6 ? 3 : popCount() >= 3 ? 2 : 1));
+    evt = pool[Math.floor(rnd() * pool.length)];
+  }
+
+  state.checks = {};
+  state.lastNight = todayStr();
+  state.day += 1;
+  state.came = newPeople;
+  save();
+
+  showNightReport(report, evt);
 }
 
-/* ══════════════ 启动 ══════════════ */
-load();
-render();
-registerSW();
+function rnd(){ return Math.random(); }
 
-setInterval(() => {
-  const k = todayKey();
-  if (state.date !== k){ rollDay(); render(); }
-}, 60000);
+function showNightReport(report, evt){
+  const came = state.came || [];
+  let h = '<h2>第 ' + (state.day - 1) + ' 夜</h2>';
+  h += '<div class="sub">' +
+    (came.length ? came.join('、') + ' 到了镇上' : '没有人来') +
+    ' · 现 ' + popCount() + ' 人 · ' + rank().t + '</div>';
+  if (!report.length){
+    h += '<p>镇子里没有人，也没有声音。这一夜很长。</p>';
+  } else {
+    h += '<div class="tally">';
+    for (const r of report){
+      h += '<div class="ti ' + (r.cls || '') + '"><span class="k">' + r.k + '</span><span class="v">' + r.v + '</span></div>';
+    }
+    h += '</div>';
+  }
+  if (evt){
+    state.pend = evt.id;
+    save();
+    h += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #e6ddcc">' +
+      '<div style="font-size:16px;font-weight:700;margin-bottom:6px">' + evt.title + '</div>' +
+      '<p>' + evt.text + '</p></div>';
+    h += evt.opts.map((o, i) => optHTML(o, i)).join('');
+  } else {
+    h += '<div style="margin-top:16px"><button class="btn" data-act="nextday">天亮了</button></div>';
+  }
+  openModal(h);
+}
+
+function optHTML(o, i){
+  const cost = o.cost || {};
+  let ok = true, txt = [];
+  for (const k in cost){
+    const enough = (state.res[k] || 0) >= cost[k];
+    if (!enough) ok = false;
+    txt.push('<span style="color:' + (enough ? '#9a8f7d' : '#c08a72') + '">' + RES[k].name + ' ' + cost[k] + '</span>');
+  }
+  if (o.need){
+    if (o.need.prof && !has(o.need.prof === 'sleep' ? 'sleep' : o.need.prof)){ ok = false; txt.push('<em>没有这个人</em>'); }
+    if (o.need.build && !state.build[o.need.build]){ ok = false; txt.push('<em>需要' + BUILD_NAME[o.need.build] + '</em>'); }
+    if (o.need.room && !room()){ ok = false; txt.push('<em>住不下</em>'); }
+  }
+  const costTxt = txt.length
+    ? txt.join(' · ')
+    : (o.warn ? '<em>' + o.warn + '</em>' : '<span style="color:#b0a694">不付出什么</span>');
+  return '<button class="opt" data-opt="' + i + '"' + (ok ? '' : ' disabled') + '>' +
+    '<span class="lb">' + o.lb + '</span><span class="cost">' + costTxt + '</span></button>';
+}
+
+function applyOpt(i){
+  if (!state.pend) return;
+  const evt = EVENTS.find(e => e.id === state.pend);
+  if (!evt) return;
+  const o = evt.opts[i];
+  if (!o) return;
+
+  if (o.cost) pay(o.cost);
+  if (o.good){
+    if (o.good.extraPop){
+      const miss = TASKS.find(t => !state.pop.some(p => p.id === t.id) && (!t.need || state.build[t.need]));
+      if (miss && room()){
+        state.pop.push({ id: miss.id, who: '新来的', since: state.day });
+      }
+    } else {
+      gain(o.good);
+    }
+  }
+  if (o.bad){
+    if (o.bad.pop){
+      for (let n = 0; n < o.bad.pop && state.pop.length; n++) state.pop.pop();
+    }
+    if (o.bad.wood) state.res.wood = Math.max(0, state.res.wood - o.bad.wood);
+    if (o.bad.meat) state.res.meat = Math.max(0, state.res.meat - o.bad.meat);
+    if (o.bad.safe) state.safe = Math.max(0, state.safe - o.bad.safe);
+    if (o.bad.loseBuild){
+      const order = ['market','shrine','tower','stonehouse','forge','granary','well','hut'];
+      for (const k of order){ if (state.build[k] > 0){ state.build[k] -= 1; break; } }
+    }
+  }
+
+  state.log.push({ d: state.day, t: o.res.replace(/<[^>]+>/g, '') });
+  state.pend = null;
+  save();
+
+  openModal('<h2>' + evt.title + '</h2><div class="sub">结果</div><p>' + o.res + '</p>' +
+    '<div style="margin-top:14px"><button class="btn" data-act="close">天亮了</button></div>');
+  render();
+}
+
+function openModal(html){
+  document.getElementById('sheet').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+  render();
+}
+
+let toastT = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('show'), 1900);
+}
+
+function doExport(){
+  const data = JSON.stringify(state, null, 2);
+  try{
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(data);
+      toast('存档已复制到剪贴板');
+    } else {
+      throw new Error('no clipboard');
+    }
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = data;
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); toast('存档已复制'); }
+    catch(err){ toast('复制失败'); }
+    document.body.removeChild(ta);
+  }
+}
+
+/* ---------- 启动 ---------- */
+
+load();
+if (state.pend){
+  const evt = EVENTS.find(e => e.id === state.pend);
+  if (evt){
+    render();
+    let h = '<h2>' + evt.title + '</h2><div class="sub">昨天夜里的事还没处理</div><p>' + evt.text + '</p>';
+    h += evt.opts.map((o, i) => optHTML(o, i)).join('');
+    openModal(h);
+  } else { state.pend = null; save(); render(); }
+} else {
+  render();
+}
 </script>
 </body>
 </html>
