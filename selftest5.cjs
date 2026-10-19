@@ -127,6 +127,21 @@ ok('无名住户也画出来了', S("FOLK.nodes.has('dwell0')"));
 ok('无名住户不参与派工', S("WORK_AT['dwell0']") === undefined);
 ok('小人写好了位置', /translate\([\d.]+ [\d.]+\)/.test(S("FOLK.nodes.get('wake').getAttribute('transform')")));
 
+/* ---------- 3b. 人形三件套：草帽 / 圆身 / 腿 ---------- */
+const folkHTML = S("FOLK.nodes.get('wake').innerHTML");
+ok('草帽单独成组（帽子才能自己晃）', folkHTML.includes('class="hat"'));
+ok('草帽有扁帽檐', folkHTML.includes('rx="4.5"') && folkHTML.includes('ry="1.1"'));
+ok('草帽有锥', folkHTML.includes('M0 -12.6 L3.5 -8.7 L-3.5 -8.7 Z'));
+ok('身子是圆圈', folkHTML.includes('cy="-5" r="3.1"'));
+ok('有两条腿', (folkHTML.match(/V0\.2/g) || []).length === 2);
+ok('不再是头肩腿三段图钉', !folkHTML.includes('cy="-8.6" r="2.5"'));
+
+/* ---------- 3c. 洗澡的对应人是赤脚医生 ---------- */
+eq('洗澡 → 赤脚医生', S("TASKS.find(t=>t.id==='wash').prof"), '赤脚医生');
+eq('赤脚医生去井边看诊', S("WORK_AT.wash.label"), '看诊');
+ok('人名没变，还是苏姐', S("TASKS.find(t=>t.id==='wash').who") === '苏姐');
+ok('产出的还是布（她的药布）', S("TASKS.find(t=>t.id==='wash').res") === 'cloth');
+
 /* ---------- 4. 场景重绘不能动人物层（这条是整件事的地基） ---------- */
 const nodeBefore = S("FOLK.nodes.get('wake')");
 const sigBefore = S("_sceneSig");
@@ -299,7 +314,7 @@ S('save();');
 ok('存档写进去了', store['town_v4'] !== undefined && store['town_v4'].length > 50);
 
 /* ---------- 输出 ---------- */
-console.log('\n小镇 v4.3 自检（动效 + 人物层 + 建筑等级）');
+console.log('\n小镇 v4.4 自检（草帽小人 + 赤脚医生 + 建筑等级）');
 console.log('─'.repeat(52));
 if (fails.length){
   console.log('失败项：');
