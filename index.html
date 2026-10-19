@@ -282,7 +282,7 @@ main{padding:14px 16px 20px}
    小镇 v4 —— 打卡招人，人撑起镇子
    ========================================================================== */
 
-const APP_VER = 'v4.4';
+const APP_VER = 'v4.5';
 const SAVE = 'town_v4';
 const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 
@@ -338,19 +338,26 @@ const BUILDS = [
   { id:'shrine', name:'祠堂',   icon:'shrine', cost:{wood:30, stone:30, iron:12, coin:20},
     desc:'镇子最老的那棵树旁。有它在，人心就定。', eff:'事件概率 −40%', repeat:false, need:'stonehouse',
     up:[null, {stone:24,iron:10,coin:16}, {stone:44,iron:20,coin:34}],
-    upText:['', '事件 −48%', '事件 −55%'] }
+    upText:['', '事件 −48%', '事件 −55%'] },
+  { id:'hall',   name:'村长家', icon:'gate',   cost:{wood:25, stone:15},
+    desc:'纸生在门口挂了块木牌：鸡毛蒜皮，先到我这里评理。', eff:'低危的事，村长直接摆平', repeat:false, need:'well',
+    up:[null, {wood:20,stone:16}, {wood:36,stone:28,coin:12}],
+    upText:['', '摆平 45%', '摆平 60%'] }
 ];
+
+// 村长家摆平率。只消化 tier1 且不涉人命/走人的小事 —— 这是"事件多了不烦"的阀门
+const HALL_RATE = [0.30, 0.45, 0.60];
 
 /* 事件：tier 1 小 / 2 中 / 3 大 */
 const EVENTS = [
-  { id:'beast', tier:1, title:'山上下来的东西',
+  { id:'beast', cat:'灾', w:1.0, tier:1, title:'山上下来的东西',
     text:'半夜，狗不叫了。栅栏外面有东西在喘。',
     opts:[
       { lb:'让阿岩去赶', need:{prof:'train'}, cost:{meat:1}, res:'阿岩提着刀出去了，半个时辰后回来，刀上有血，人没事。肉少了一块，他拿去引开了它。' },
       { lb:'把门堵死，等天亮', cost:{wood:3}, res:'你们用三根木头把门顶住，蹲了一夜。天亮时外面只剩几个脚印。' },
       { lb:'不管它', cost:{}, warn:'丢两块肉', res:'它撞开了篱笆，叼走了挂在檐下的两块肉。', bad:{meat:2} }
     ]},
-  { id:'rain', tier:1, title:'连下了三天雨',
+  { id:'rain', cat:'灾', w:0.7, tier:1, title:'连下了三天雨',
     text:'屋顶开始漏。地上积了水，柴也湿了。',
     opts:[
       { lb:'用布补屋顶', cost:{cloth:2}, res:'苏姐把晾着的药布扯下来，一层层压进缝里。雨还在下，但屋里是干的。' },
@@ -358,28 +365,33 @@ const EVENTS = [
       { lb:'等雨停', need:{build:'stonehouse'}, cost:{}, res:'石屋不漏。你们在屋里听着雨，谁也没说话。' },
       { lb:'就这么淋着', cost:{}, warn:'会走一个人', res:'有人咳了一夜。第二天，一个还没住下的人走了。', bad:{pop:1} }
     ]},
-  { id:'stray', tier:1, title:'门口来了个流民',
+  { id:'stray', cat:'外', w:0.8, tier:1, title:'门口来了个流民',
     text:'一个瘦得脱形的男人站在镇口，说他什么都能干。',
     opts:[
       { lb:'给他一顿饭', cost:{meat:2}, res:'他吃得很慢，像怕吃完就没了。走的时候，他在门口放下了两捆柴。', good:{wood:2} },
       { lb:'收下他', need:{room:true}, cost:{meat:1}, res:'他留下了。名字没问，先叫他「新来的」。', good:{extraPop:1} },
       { lb:'让他走', cost:{}, res:'他点点头，往山那边去了。你不知道他能不能走到下一个镇子。', bad:{safe:1} }
     ]},
-  { id:'trader', tier:1, title:'行商路过',
+  { id:'trader', cat:'外', w:0.8, tier:1, title:'行商路过',
     text:'一个推独轮车的人，车上有铁，也有盐。',
     opts:[
       { lb:'用肉换铁', cost:{meat:3}, res:'换了两块铁。他说下个月还来。', good:{iron:2} },
       { lb:'用木换肉', cost:{wood:6}, res:'他挑了几根直的，丢下半扇腌肉。', good:{meat:3} },
       { lb:'不换', cost:{}, res:'他推着车走了。车轮声在土路上响了很久。' }
     ]},
-  { id:'plague', tier:2, title:'镇里有人发烫',
+  { id:'plague', cat:'灾', w:1.0, tier:2, title:'镇里有人发烫',
     text:'第一个人是苏姐。第二天，是白先生。',
     opts:[
       { lb:'去井边取水', need:{build:'well'}, cost:{}, res:'井水凉。你们把水烧开，一勺一勺喂。三天后，人都退了烧。' },
+      { lb:'用采药人的方子', need:{prof:'wash'}, chance:0.85,
+        when:() => state.hist && state.hist.herb !== undefined,
+        good:{ txt:'药煎了三碗，一晚一回。两天后烧全退了。那张发黄的纸救了两条命。', good:{safe:1} },
+        flat:{ txt:'烧退得慢，但药确实起了作用。人都保住了。', },
+        bad:{ txt:'头一碗药熬糊了。好在后两碗还来得及。', bad:{safe:1} } },
       { lb:'用布烧水煮', cost:{cloth:3, meat:1}, res:'布不够，拆了两件旧衣裳。人保住了，但镇子元气伤了些。', bad:{safe:1} },
       { lb:'硬扛', cost:{}, warn:'会死人', res:'扛过去了。两个人没起来。房子还在，只是空了两间。', bad:{pop:2, safe:2} }
     ]},
-  { id:'thief', tier:2, title:'夜里有贼',
+  { id:'thief', cat:'村', w:1.0, tier:2, title:'夜里有贼',
     text:'存粮的地方被人翻过，地上有泥脚印。',
     opts:[
       { lb:'让灯守夜', need:{prof:'sleep'}, cost:{}, res:'第二夜，灯在粮仓后头站了一整晚。再没人来过。' },
@@ -387,52 +399,218 @@ const EVENTS = [
       { lb:'把粮换成铁箱', cost:{iron:4}, res:'箱子钉死了。贼来了，什么也没搬走。' },
       { lb:'算了', cost:{}, warn:'丢三块肉', res:'少了三块肉。你不知道是谁拿的，也不好问。', bad:{meat:3} }
     ]},
-  { id:'drought', tier:2, title:'两个月没下雨',
+  { id:'drought', cat:'灾', w:1.1, tier:2, title:'两个月没下雨',
     text:'河床露了石头，地裂开了口子。',
     opts:[
       { lb:'从井里取水', need:{build:'well'}, cost:{}, res:'井没干。你们一桶一桶提上来，浇在最要紧的那几块地上。' },
       { lb:'去更远的河挑水', cost:{}, res:'一天只能挑两趟。人累得说不出话，<b>这一整天没人干活</b>。', bad:{halve:true} },
       { lb:'放弃这一季', cost:{}, warn:'损失惨重', res:'地里什么都没长出来。有人站在田边看了很久。', bad:{meat:3, safe:1} }
     ]},
-  { id:'collapse', tier:2, title:'矿洞塌了',
+  { id:'collapse', cat:'灾', w:1.0, tier:2, title:'矿洞塌了',
     text:'白先生带人采石，回来时少了一个人，多了三根断指。',
     opts:[
       { lb:'用布包扎', cost:{cloth:3}, res:'苏姐把布撕成条。血止住了，但那只手是废了。' },
       { lb:'送他去山下', cost:{meat:2}, res:'两个人抬着他走了。回来时天黑了，说送到了。', bad:{safe:1} },
       { lb:'给他一笔钱', cost:{coin:5}, res:'他拿着钱，说要去城里看大夫。走之前，他把凿子留给了白先生。' }
     ]},
-  { id:'wedding', tier:1, title:'镇上有人要成亲',
+  { id:'wedding', cat:'村', w:0.7, tier:1, title:'镇上有人要成亲',
     text:'是苏姐和一个外村来的木匠。她说想请大家吃一顿。',
     opts:[
       { lb:'办三桌', cost:{meat:5, coin:3}, res:'肉炖了很久。灯把镇子照得比哪一夜都亮。那天之后，人心定了很多。', good:{safe:3, happy:3} },
       { lb:'简单吃一顿', cost:{meat:2}, res:'一人一碗。木匠说，这里像个能过日子的地方。', good:{safe:1} },
       { lb:'先不办', cost:{}, res:'苏姐说没事。第二天她照常背着药箱出门。', bad:{safe:1} }
     ]},
-  { id:'recruit', tier:2, title:'山那边的镇子来要人',
+  { id:'recruit', cat:'外', w:1.0, tier:2, title:'山那边的镇子来要人',
     text:'来了两个骑马的人，说那边缺人手，愿意给钱。',
     opts:[
       { lb:'让他们带人走', cost:{}, warn:'走一个人', res:'走了一个。钱袋沉了一点。', good:{coin:8}, bad:{pop:1} },
       { lb:'留人', cost:{coin:6}, res:'你给了钱，说这里也需要人。他们收了钱，走了。' },
       { lb:'跟他们换铁', cost:{}, warn:'走两个人', res:'用两个人换了一车下脚料。你知道这笔账不划算。', good:{iron:6}, bad:{pop:2} }
     ]},
-  { id:'traveler', tier:1, title:'迷路的人',
+  { id:'traveler', cat:'外', w:0.6, tier:1, title:'迷路的人',
     text:'一个背着书箱的年轻人，说要去京城，走错了路。',
     opts:[
       { lb:'留他住一晚', cost:{meat:1}, res:'他讲了一夜外面的事。纸生听得眼睛发亮。', good:{coin:2, safe:1} },
       { lb:'给他指路', cost:{}, res:'他谢过，往东去了。走前在地上画了半个图，说这条路上有个泉眼。', good:{safe:1} }
     ]},
-  { id:'snow', tier:3, title:'第一场雪，比往年来得早',
+  { id:'snow', cat:'灾', w:1.1, tier:3, title:'第一场雪，比往年来得早',
     text:'雪压下来，屋梁在半夜响了一声。',
     opts:[
       { lb:'烧柴保屋', cost:{wood:10}, res:'柴烧了一夜。屋梁撑住了，人都还在。' },
       { lb:'拆一间空房', cost:{}, warn:'拆掉一栋建筑', res:'拆了一间。木头是干的。但镇子少了一块。', bad:{loseBuild:1} },
       { lb:'所有人生火挤在一处', cost:{meat:4}, res:'一间屋里挤了十几个人。没人冻死，但有人病了一场。', bad:{safe:1} }
+    ]},
+
+  /* ---- 以下 12 个是 v4.5 新增：掷骰 / 冷却 / 村长家 / 事件链的第一批 ---- */
+
+  { id:'wolf', tier:1, cat:'灾', w:1.1, title:'狼在篱笆外转',
+    text:'连着两晚，狗都缩在窝里不敢叫。篱笆外有绿眼睛。',
+    opts:[
+      { lb:'抬半扇肉到山口', cost:{meat:3}, chance:0.65, bonus:{res:'meat', per:5, step:0.05, who:'train', plus:0.10},
+        good:{ txt:'天亮时肉没了，狼也没了。阿岩说，它吃饱就不会下山。', good:{safe:1} },
+        flat:{ txt:'狼叼着肉走了。夜里还在篱笆外转悠，但没进来。', },
+        bad:{ txt:'肉白放了。它从破篱笆口钻进来，叼走了挂在檐下的肉。', bad:{meat:3} } },
+      { lb:'把门堵死，多点火堆', cost:{wood:4}, res:'火亮了一整夜。狼在篱笆外坐了半宿，走了。' },
+      { lb:'不管它', cost:{}, warn:'丢两块肉', res:'第二天一早，篱笆上多了几个豁口。', bad:{meat:2} }
+    ]},
+  { id:'fight', tier:1, cat:'村', w:0.8, title:'王家和李家吵起来了',
+    text:'为一垄地的界石。两家人在祠堂前嚷嚷，半个镇子都在看。',
+    opts:[
+      { lb:'请人去劝', chance:0.55, bonus:{who:'sleep', plus:0.10},
+        good:{ txt:'灯平时不爱说话，但他把两家的地契都背了出来。界石挪了半尺，两家都认了。', good:{safe:1} },
+        flat:{ txt:'劝住了。地界还是没说清，但至少没人再嚷。', },
+        bad:{ txt:'越劝越凶。两家从此不说话，浇水也各浇各的。', bad:{safe:1} } },
+      { lb:'摆一桌酒，两家坐下来', cost:{meat:3}, res:'酒过三巡，谁也想不起来为什么吵的。界石还是老地方。' },
+      { lb:'不掺和', cost:{}, warn:'治安变差', res:'他们自己吵完了。但镇子上从此多了两家不说话的人。', bad:{safe:1} }
+    ]},
+  { id:'peddler', tier:1, cat:'外', w:0.8, title:'货郎的包袱',
+    text:'货郎摊开一块布，有铜锁、有针线，还有一个油纸包着的、看不出名堂的东西。',
+    opts:[
+      { lb:'买那个看不出名堂的', cost:{coin:2}, chance:0.30,
+        good:{ txt:'拆开是半块上好的铁料。货郎自己也说不清它怎么到的他手上。', good:{iron:3} },
+        flat:{ txt:'是一包受潮的火药，点不着。丢了可惜，留着没用。', },
+        bad:{ txt:'拆开是几块上了漆的石头。货郎已经走出二里地了。', } },
+      { lb:'买针线', cost:{coin:2}, res:'针和线。苏姐说，这比什么都实在。', good:{cloth:2} },
+      { lb:'不买', cost:{}, res:'他挑着担子走了，吆喝声传出去很远。' }
+    ]},
+  { id:'herb', tier:1, cat:'外', w:0.7, title:'采药人',
+    text:'老人背着一篓药草，说山里今年收成不好，下来换点吃的。',
+    opts:[
+      { lb:'用肉换他手里的方子', cost:{meat:2}, res:'一张发黄的纸，写着退烧的方子。苏姐看了很久，收进了药箱。',
+        good:{safe:1} },
+      { lb:'给他一顿饭', cost:{meat:1}, res:'他吃得很少，走时留了一小把薄荷。', good:{cloth:1} },
+      { lb:'不换', cost:{}, res:'他往山下去了。背影瘦得像根竹子。' }
+    ]},
+  { id:'grudge', tier:2, cat:'村', w:0.8, title:'走了的人托话回来',
+    when:() => state.hist && state.hist.recruit === 0,
+    text:'跟骑马的人走的那个人捎话回来：他在那边过得不好，想回来。那边镇子捎话说，走了的人，留下过钱。',
+    opts:[
+      { lb:'让他回来，钱照给', cost:{coin:5}, res:'他回来了，比走时瘦。钱给了那边，两清。', good:{safe:2} },
+      { lb:'让他回来，钱不给', chance:0.5,
+        good:{ txt:'那边咽不下这口气。但隔着两座山，也就咽下了。', },
+        flat:{ txt:'话传回来：那边"记下了"。你不知道记下了是什么意思。', },
+        bad:{ txt:'半个月后，行商绕路，草料涨价。山那边处处压你一头。', bad:{coin:3} } },
+      { lb:'不回来了', cost:{}, warn:'治安变差', res:'话没回。镇子里开始有人说闲话。', bad:{safe:1} }
+    ]},
+  { id:'bridge', tier:2, cat:'灾', w:0.9, title:'河上那座桥要塌了',
+    text:'去年水大，桥墩歪了。现在去对岸，要绕半天山路。',
+    opts:[
+      { lb:'修桥', cost:{wood:8, stone:4}, chance:0.60, bonus:{res:'wood', per:8, step:0.04},
+        good:{ txt:'桥修好了。去对岸快了半天，行商也愿意来了。', good:{coin:3, safe:1} },
+        flat:{ txt:'桥能走了，但一次只敢过一个人。', },
+        bad:{ txt:'修到一半又塌了。木头白费。', bad:{wood:4} } },
+      { lb:'绕着走', cost:{}, res:'绕就绕。山路走惯了，也就不觉得远。' }
+    ]},
+  { id:'keeper', tier:2, cat:'村', w:0.9, title:'泥脚印又来了',
+    when:() => state.hist && state.hist.thief === 0,
+    text:'粮仓外的泥脚印比上次深。这次不止一个人。白天来看过 —— 就是蹲在集市口抽烟的那两个。',
+    opts:[
+      { lb:'让灯带人守着', need:{prof:'sleep'}, chance:0.60, bonus:{who:'sleep', plus:0.10},
+        good:{ txt:'他们没敢进来。天亮前翻过篱笆走了，再没回来。', good:{safe:2} },
+        flat:{ txt:'僵了一夜，他们走了。有人在守的粮，他们不敢碰。', },
+        bad:{ txt:'黑灯瞎火里打了一架。粮没丢，白先生的头破了。', bad:{safe:1} } },
+      { lb:'把粮分到各家', cost:{}, res:'粮散了，贼没得偷。但各家也就都多操一份心。', good:{safe:1} },
+      { lb:'装作不知道', cost:{}, warn:'丢肉丢铁', res:'夜里粮仓被撬开了。他们很熟练。', bad:{meat:3, iron:2} }
+    ]},
+  { id:'torch', tier:2, cat:'村', w:0.7, title:'夜里的私塾',
+    text:'纸生说，镇上一半的人不认得自己的名字。他想夜里教，不收钱。',
+    opts:[
+      { lb:'让他教', cost:{wood:3, cloth:2}, chance:0.75,
+        good:{ txt:'七个人围着一盏灯认字。三个月后，集市上开始有人自己记账了。', good:{coin:2, safe:1} },
+        flat:{ txt:'来的人不多。但纸生说，教一个是一个。', },
+        bad:{ txt:'三天就没人来了。夜里太累。灯油白费。', } },
+      { lb:'不折腾', cost:{}, res:'纸生没再提。他把自己的书又理了一遍。' }
+    ]},
+  { id:'storm', tier:3, cat:'灾', w:1.2, title:'山洪下来的那晚',
+    text:'上游下了整天的雨。河水的声音不对了，像有人在推石头。',
+    opts:[
+      { lb:'全体上堤加固', cost:{wood:8}, chance:0.55, bonus:{res:'wood', per:8, step:0.04},
+        good:{ txt:'水到了堤下三尺，停住了。天亮时大家坐在堤上，谁也没说话，但都在笑。', good:{safe:2} },
+        flat:{ txt:'堤保住了，柴垛冲走了。人都在。', bad:{wood:2} },
+        bad:{ txt:'堤垮了一段。水进了镇子。最靠河那间屋，塌了。', bad:{loseBuild:1, safe:2} } },
+      { lb:'往高处撤', cost:{}, warn:'家当受损', res:'人在坡上蹲了一夜。水退了，家里泡了。', bad:{wood:4, safe:1} }
+    ]},
+  { id:'feast', tier:3, cat:'村', w:0.8, title:'丰年祭',
+    when:() => state.hist && state.hist.wedding === 0,
+    text:'今年粮够，肉也够。有人提议办一场祭，请全镇，也请路过的行商。上次办三桌，还是苏姐成亲那天。',
+    opts:[
+      { lb:'大办', cost:{meat:6, coin:4}, chance:0.80,
+        good:{ txt:'三天。邻镇都有人来看。走的时候他们说：这地方，是个有人管的地方。', good:{safe:3, coin:2} },
+        flat:{ txt:'办成了。肉多到第三天大家看见肉就摆手。', },
+        bad:{ txt:'第二天下雨，肉坏了半扇。祭还是办完了，只是笑得勉强。', bad:{meat:2} } },
+      { lb:'小办', cost:{meat:3}, res:'一桌，自己人。够了。', good:{safe:1} },
+      { lb:'不办', cost:{}, res:'粮是自己的粮，日子是自己的日子。' }
+    ]},
+  { id:'envoy', tier:3, cat:'外', w:0.9, title:'县里来的人',
+    text:'两个穿长衫的，奉命登记山里各镇的丁口。态度客气，但册子已经摊开了。',
+    opts:[
+      { lb:'如实登记，请他吃饭', cost:{meat:3, coin:3}, chance:0.70, bonus:{who:'read', plus:0.10},
+        good:{ txt:'册子记完，那人多喝了一碗酒：山高皇帝远，你们过你们的。', good:{safe:2} },
+        flat:{ txt:'登记完就走了。没多话，也没为难。', },
+        bad:{ txt:'册子上记了些什么，没人看得懂。领头的临走多看了一眼粮仓。', bad:{safe:1} } },
+      { lb:'送一笔"茶水钱"', cost:{coin:8}, res:'册子合上了。他说，山里的事，山里人自己管。', good:{safe:1} },
+      { lb:'闭门不见', cost:{}, warn:'可能有麻烦', res:'他们记了点什么，走了。进山的路口，多了块新的木牌。', bad:{safe:2} }
+    ]},
+  { id:'ghost', tier:3, cat:'村', w:0.6, title:'祠堂里的灯',
+    text:'守夜的灯说，三更时祠堂里亮了一下。没人住在那里，也没有风。',
+    opts:[
+      { lb:'上香问问', need:{build:'shrine'}, chance:0.5,
+        good:{ txt:'那一晚所有人都睡得很好。第二天，井水比往常甜。', good:{safe:2} },
+        flat:{ txt:'什么也没有。灯说他可能看错了。', },
+        bad:{ txt:'香灭了三次。有人说，是先人不高兴。那几天没人敢大声说话。', bad:{safe:1} } },
+      { lb:'把门锁上', cost:{}, res:'锁上了。夜里再没亮过。' },
+      { lb:'不理会', cost:{}, warn:'人心浮动', res:'祠堂的灯连亮了三晚。第四晚，有人开始收拾包袱。', bad:{safe:2} }
     ]}
 ];
 
-/* ---------- 状态 ---------- */
+/* ---------- 事件机制：掷骰 / 冷却抽取 / 村长家 ---------- */
 
 let state = null;
+
+// 成功率 = 基础值 + 已投入的加成，封顶 95% —— 纸墨世界没有百分之百
+function chanceOf(o){
+  let p = o.chance;
+  const b = o.bonus;
+  if (b){
+    if (b.res) p += Math.floor((state.res[b.res] || 0) / (b.per || 5)) * (b.step || 0.05);
+    if (b.who && state.pop.some(pp => pp.id === b.who)) p += (b.plus || 0.10);
+  }
+  return Math.min(0.95, Math.max(0.05, p));
+}
+// 白话把握，不显示数字 —— 古人不谈百分比
+function chanceWord(p){
+  if (p >= 0.9) return '十拿九稳';
+  if (p >= 0.75) return '稳当';
+  if (p >= 0.6) return '有七成把握';
+  if (p >= 0.45) return '对半开';
+  if (p >= 0.3) return '赌一把';
+  return '听天由命';
+}
+// 村长只摆平"不涉人命/走人/赌局"的小事。大事必须到你面前
+function isMinor(evt){
+  return !evt.opts.some(o => o.warn || o.chance || (o.bad && o.bad.pop));
+}
+// 冷却抽取：最近 4 个不再出现；平淡事权重压低，危机优先
+function pickEvent(){
+  const maxTier = popCount() >= 6 ? 3 : popCount() >= 3 ? 2 : 1;
+  if (!state.seen) state.seen = [];
+  const pool = EVENTS.filter(e =>
+    e.tier <= maxTier &&
+    state.seen.indexOf(e.id) < 0 &&
+    (!e.when || e.when()));
+  if (!pool.length) return null;
+  let total = 0;
+  for (const e of pool) total += (e.w || 1);
+  let r = rnd() * total;
+  let pick = pool[pool.length - 1];
+  for (const e of pool){
+    r -= (e.w || 1);
+    if (r <= 0){ pick = e; break; }
+  }
+  state.seen.push(pick.id);
+  while (state.seen.length > 4) state.seen.shift();
+  return pick;
+}
 let tab = 'today';
 
 // 建筑等级。没升过就是 1；数字型建筑（木棚/石屋/陷阱）不升级，靠数量长。
@@ -519,6 +697,8 @@ function load(){
       if (s && s.v === 4){
         // 老存档没有等级字段，全部当 Lv1 —— 不能因为升级上线就把人家的房子降级
         if (!s.lv) s.lv = {};
+        if (!s.seen) s.seen = [];   // 事件冷却
+        if (!s.hist) s.hist = {};   // 做过的选择（记仇与事件链从这读）
         state = s;
         return;
       }
@@ -1539,13 +1719,11 @@ function doNight(){
     }
   }
 
-  // 4) 事件
-  const p = eventRate();
-  const roll = rnd();
-  let evt = null;
-  if (roll < p){
-    const pool = EVENTS.filter(e => e.tier <= (popCount() >= 6 ? 3 : popCount() >= 3 ? 2 : 1));
-    evt = pool[Math.floor(rnd() * pool.length)];
+  // 4) 事件：先按概率掷是否出事，再抽哪件，再问村长 —— 他只摆平不涉人命的小事，不弹窗
+  let evt = rnd() < eventRate() ? pickEvent() : null;
+  if (evt && state.build.hall && isMinor(evt) && rnd() < HALL_RATE[lvAdd('hall')]){
+    report.push({ k: '村长家', v: evt.title + ' · 摆平了' });
+    evt = null;
   }
 
   state.checks = {};
@@ -1592,6 +1770,7 @@ function showNightReport(report, evt){
 }
 
 function optHTML(o, i){
+  if (o.when && !o.when()) return '';   // 事件链选项：没解锁就当不存在
   const cost = o.cost || {};
   let ok = true, txt = [];
   for (const k in cost){
@@ -1604,9 +1783,13 @@ function optHTML(o, i){
     if (o.need.build && !state.build[o.need.build]){ ok = false; txt.push('<em>需要' + BUILD_NAME[o.need.build] + '</em>'); }
     if (o.need.room && !room()){ ok = false; txt.push('<em>住不下</em>'); }
   }
-  const costTxt = txt.length
+  let costTxt = txt.length
     ? txt.join(' · ')
     : (o.warn ? '<em>' + o.warn + '</em>' : '<span style="color:#b0a694">不付出什么</span>');
+  // 掷骰项显示白话把握，不显示数字。加成已经算进去了，玩家从「肉够不够、人在不在」自己推
+  if (o.chance){
+    costTxt += ' · <span style="color:#8a6f3a;font-weight:700">' + chanceWord(chanceOf(o)) + '</span>';
+  }
   return '<button class="opt" data-opt="' + i + '"' + (ok ? '' : ' disabled') + '>' +
     '<span class="lb">' + o.lb + '</span><span class="cost">' + costTxt + '</span></button>';
 }
@@ -1616,39 +1799,61 @@ function applyOpt(i){
   const evt = EVENTS.find(e => e.id === state.pend);
   if (!evt) return;
   const o = evt.opts[i];
-  if (!o) return;
+  if (!o || (o.when && !o.when())) return;
 
   if (o.cost) pay(o.cost);
-  if (o.good){
-    if (o.good.extraPop){
+
+  // 掷骰：成了 / 平平 / 砸了。剩余概率对半分给"平平"和"砸了"。
+  // 把握来自你已经投入的东西（肉、木头、该在的人）——这是攒资源的第二层意义
+  let seg = null;
+  if (o.chance){
+    const p = chanceOf(o), r = rnd();
+    if (r < p) seg = o.good;
+    else if (o.flat && (r - p) < (1 - p) / 2) seg = o.flat;
+    else seg = o.bad;
+  }
+  const eff = seg || o;
+  const txt = (seg && seg.txt) || o.res;
+
+  applyFx(eff.good, eff.bad);
+
+  if (!state.hist) state.hist = {};
+  state.hist[evt.id] = i;   // 记仇与事件链都从这里读：你做过什么选择，镇子记得
+  state.log.push({ d: state.day, t: String(txt).replace(/<[^>]+>/g, '') });
+  state.pend = null;
+  save();
+
+  const segName = o.chance ? (seg === o.good ? '成了' : seg === o.flat ? '平平' : '砸了') : '结果';
+  openModal('<h2>' + evt.title + '</h2><div class="sub">' + segName + '</div><p>' + txt + '</p>' +
+    '<div style="margin-top:14px"><button class="btn" data-act="close">天亮了</button></div>');
+  render();
+}
+
+function applyFx(good, bad){
+  if (good){
+    if (good.extraPop){
       const miss = TASKS.find(t => !state.pop.some(p => p.id === t.id) && (!t.need || state.build[t.need]));
       if (miss && room()){
         state.pop.push({ id: miss.id, who: '新来的', since: state.day });
       }
     } else {
-      gain(o.good);
+      gain(good);
     }
   }
-  if (o.bad){
-    if (o.bad.pop){
-      for (let n = 0; n < o.bad.pop && state.pop.length; n++) state.pop.pop();
+  if (bad){
+    if (bad.pop){
+      for (let n = 0; n < bad.pop && state.pop.length; n++) state.pop.pop();
     }
-    if (o.bad.wood) state.res.wood = Math.max(0, state.res.wood - o.bad.wood);
-    if (o.bad.meat) state.res.meat = Math.max(0, state.res.meat - o.bad.meat);
-    if (o.bad.safe) state.safe = Math.max(0, state.safe - o.bad.safe);
-    if (o.bad.loseBuild){
-      const order = ['market','shrine','tower','stonehouse','forge','granary','well','hut'];
+    if (bad.wood) state.res.wood = Math.max(0, state.res.wood - bad.wood);
+    if (bad.meat) state.res.meat = Math.max(0, state.res.meat - bad.meat);
+    if (bad.iron) state.res.iron = Math.max(0, state.res.iron - bad.iron);
+    if (bad.coin) state.res.coin = Math.max(0, state.res.coin - bad.coin);
+    if (bad.safe) state.safe = Math.max(0, state.safe - bad.safe);
+    if (bad.loseBuild){
+      const order = ['market','shrine','tower','stonehouse','forge','granary','well','hall','hut'];
       for (const k of order){ if (state.build[k] > 0){ state.build[k] -= 1; break; } }
     }
   }
-
-  state.log.push({ d: state.day, t: o.res.replace(/<[^>]+>/g, '') });
-  state.pend = null;
-  save();
-
-  openModal('<h2>' + evt.title + '</h2><div class="sub">结果</div><p>' + o.res + '</p>' +
-    '<div style="margin-top:14px"><button class="btn" data-act="close">天亮了</button></div>');
-  render();
 }
 
 function openModal(html){
