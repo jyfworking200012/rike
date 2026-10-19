@@ -221,6 +221,12 @@ main{padding:14px 16px 20px}
 @keyframes work{0%,100%{transform:translateY(0)}30%{transform:translateY(1.2px)}55%{transform:translateY(0)}}
 .folk.idle .body{animation:idleb .44s ease-in-out infinite}
 @keyframes idleb{0%,100%{transform:translateY(0)}50%{transform:translateY(-.5px)}}
+/* 斗笠自己晃：绕帽檐中心摇一度半。整块一起上下浮动会像被提着走，
+   只有帽子在晃，才像戴着它的活人 */
+.folk .hat{transform-box:fill-box;transform-origin:50% 88%;animation:hatsway 4.6s ease-in-out infinite}
+@keyframes hatsway{0%,100%{transform:rotate(-1.7deg)}50%{transform:rotate(1.7deg)}}
+.folk.walking .hat{animation-duration:1.05s}
+.folk.working .hat{animation-duration:2.6s}
 
 /* 飘字：打卡派工、过夜收成。米白药丸 + 深字，压在房子上也不糊 */
 .float{
@@ -276,7 +282,7 @@ main{padding:14px 16px 20px}
    小镇 v4 —— 打卡招人，人撑起镇子
    ========================================================================== */
 
-const APP_VER = 'v4.3';
+const APP_VER = 'v4.4';
 const SAVE = 'town_v4';
 const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 
@@ -286,7 +292,7 @@ const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 const TASKS = [
   { id:'wake',  name:'早起',     prof:'樵夫',   who:'老陈',   res:'wood',  n:5, lines:'天不亮就上山，回来时背比门框还宽。' },
   { id:'train', name:'运动',     prof:'猎人',   who:'阿岩',   res:'meat',  n:2, lines:'腿上有旧伤，走山路比谁都快。' },
-  { id:'wash',  name:'洗澡',     prof:'洗衣妇', who:'苏姐',   res:'cloth', n:2, lines:'手泡得发白，全镇的布都归她管。' },
+  { id:'wash',  name:'洗澡',     prof:'赤脚医生', who:'苏姐', res:'cloth', n:2, lines:'背着药箱走七里山路。谁家孩子发烧，都先找她。布是她的药布，也是她的工钱。' },
   { id:'study', name:'学习',     prof:'石匠',   who:'白先生', res:'stone', n:3, lines:'敲石头前先量三遍，说石头不会骗人。' },
   { id:'quit',  name:'不刷手机', prof:'铁匠',   who:'锤子',   res:'iron',  n:2, lines:'话少。一开口就是要炭。', need:'forge' },
   { id:'read',  name:'阅读',     prof:'账房',   who:'纸生',   res:'coin',  n:3, lines:'算盘打得极好，算自己那份总慢半拍。', need:'market' },
@@ -347,7 +353,7 @@ const EVENTS = [
   { id:'rain', tier:1, title:'连下了三天雨',
     text:'屋顶开始漏。地上积了水，柴也湿了。',
     opts:[
-      { lb:'用布补屋顶', cost:{cloth:2}, res:'苏姐爬上屋顶，把布一层层压进缝里。雨还在下，但屋里是干的。' },
+      { lb:'用布补屋顶', cost:{cloth:2}, res:'苏姐把晾着的药布扯下来，一层层压进缝里。雨还在下，但屋里是干的。' },
       { lb:'拿木头加固', cost:{wood:4}, res:'你们加了几根横梁。屋顶没塌，但柴火泡了大半。', bad:{wood:2} },
       { lb:'等雨停', need:{build:'stonehouse'}, cost:{}, res:'石屋不漏。你们在屋里听着雨，谁也没说话。' },
       { lb:'就这么淋着', cost:{}, warn:'会走一个人', res:'有人咳了一夜。第二天，一个还没住下的人走了。', bad:{pop:1} }
@@ -400,7 +406,7 @@ const EVENTS = [
     opts:[
       { lb:'办三桌', cost:{meat:5, coin:3}, res:'肉炖了很久。灯把镇子照得比哪一夜都亮。那天之后，人心定了很多。', good:{safe:3, happy:3} },
       { lb:'简单吃一顿', cost:{meat:2}, res:'一人一碗。木匠说，这里像个能过日子的地方。', good:{safe:1} },
-      { lb:'先不办', cost:{}, res:'苏姐说没事。第二天她照常去洗布。', bad:{safe:1} }
+      { lb:'先不办', cost:{}, res:'苏姐说没事。第二天她照常背着药箱出门。', bad:{safe:1} }
     ]},
   { id:'recruit', tier:2, title:'山那边的镇子来要人',
     text:'来了两个骑马的人，说那边缺人手，愿意给钱。',
@@ -885,7 +891,7 @@ const ROW_Y = [198.5, 184, 170];
 const WORK_AT = {
   wake:  { at:'left',   label:'上山' },
   train: { at:'right',  label:'下套' },
-  wash:  { at:'well',   label:'打水' },
+  wash:  { at:'well',   label:'看诊' },
   study: { at:'back',   label:'采石' },
   quit:  { at:'forge',  label:'打铁' },
   read:  { at:'market', label:'记账' },
@@ -927,7 +933,7 @@ function slotOf(i, n){
   return {
     x: Math.max(30, Math.min(330, x0 + c * gap + sx + jx)),
     y: ROW_Y[r] - jy,
-    s: [0.92, 0.84, 0.76][r]
+    s: [1, 0.9, 0.8][r]
   };
 }
 
@@ -950,13 +956,17 @@ function createFolk(id, idx, n){
   const col = folkInk();
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('class', 'folk idle');
-  // 头 2.5 / 肩 4.6 / 腿 3.1 —— 头身比接近 1:3，远看才像人不像图钉
+  // 草帽 + 圆身 + 两条腿。三样缺一不可：
+  // 只有锥 + 圆 = 蘑菇；加扁帽檐 = 戴帽子的蘑菇；再加腿才读成"人"。
+  // 扁帽檐还有第二个作用：纯三角会和房子屋顶撞形，一排小人看着像一排小房子
   g.innerHTML =
-    '<ellipse cx="0" cy="0.7" rx="3.1" ry="0.85" fill="' + col + '" opacity=".15"/>' +
+    '<ellipse cx="0" cy="1" rx="2.9" ry="0.75" fill="' + col + '" opacity=".17"/>' +
     '<g class="body">' +
-      '<circle cx="0" cy="-8.6" r="2.5" fill="' + col + '"/>' +
-      '<path d="M-2.3 -6.5 L2.3 -6.5 L1.5 -3.1 L-1.5 -3.1 Z" fill="' + col + '"/>' +
-      '<path d="M-1.2 -3.1 V0 M1.2 -3.1 V0" stroke="' + col + '" stroke-width="1.1" fill="none" stroke-linecap="round"/>' +
+      '<path d="M-1.4 -2.4 V0.2 M1.4 -2.4 V0.2" stroke="' + col + '" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="0" cy="-5" r="3.1" fill="' + col + '"/>' +
+      '<path d="M-2.2 -6.4 Q0 -4.6 2.2 -6.4" stroke="' + col + '" stroke-width=".8" fill="none" opacity=".32" stroke-linecap="round"/>' +
+      '<g class="hat"><path d="M0 -12.6 L3.5 -8.7 L-3.5 -8.7 Z" fill="' + col + '"/>' +
+      '<ellipse cx="0" cy="-8.7" rx="4.5" ry="1.1" fill="' + col + '"/></g>' +
     '</g>';
   document.getElementById('folks').appendChild(g);
   FOLK.nodes.set(id, g);
@@ -1022,12 +1032,14 @@ function renderGhosts(){
   let s = '';
   coming.forEach((t, i) => {
     const px = 40 + i * 26, py = 182 + (i % 2) * 5;
-    s += '<g opacity=".55">' +
-      '<circle cx="' + px + '" cy="' + (py - 8.6) + '" r="2.5" fill="none" stroke="' + cc + '" stroke-width=".9" stroke-dasharray="1.6 1.6"/>' +
-      '<path d="M' + (px - 2.1) + ' ' + (py - 6.5) + ' L' + (px + 2.1) + ' ' + (py - 6.5) +
-      ' L' + (px + 1.4) + ' ' + (py - 3.1) + ' L' + (px - 1.4) + ' ' + (py - 3.1) + ' Z" fill="none" stroke="' + cc + '" stroke-width=".9" stroke-dasharray="1.6 1.6"/>' +
-      '<path d="M' + (px - 1.1) + ' ' + (py - 3.1) + ' V' + py + ' M' + (px + 1.1) + ' ' + (py - 3.1) + ' V' + py +
-      '" stroke="' + cc + '" stroke-width=".9" stroke-dasharray="1.6 1.6"/></g>';
+    // 和真人同形状的虚线版：帽檐、锥、圆身、腿。形状一致，才一眼认得出"这是个人还没到"
+    s += '<g opacity=".55" fill="none" stroke="' + cc + '" stroke-width=".9" stroke-dasharray="1.6 1.6">' +
+      '<path d="M' + (px - 1.4) + ' ' + (py - 2.4) + ' V' + (py + 0.2) +
+      ' M' + (px + 1.4) + ' ' + (py - 2.4) + ' V' + (py + 0.2) + '" stroke-linecap="round"/>' +
+      '<circle cx="' + px + '" cy="' + (py - 5) + '" r="3"/>' +
+      '<path d="M' + px + ' ' + (py - 12.9) + ' L' + (px + 3.9) + ' ' + (py - 8.6) +
+      ' L' + (px - 3.9) + ' ' + (py - 8.6) + ' Z"/>' +
+      '<ellipse cx="' + px + '" cy="' + (py - 8.6) + '" rx="5" ry="1.2"/></g>';
   });
   _ghostBox.innerHTML = s;
 }
@@ -1501,7 +1513,7 @@ function doNight(){
     const n = yieldOf(t);
     produced[t.res] = (produced[t.res] || 0) + n;
   }
-  // 井升级后多出一块公共洗衣台：不管今天有没有洗衣妇，布都在那儿
+  // 井升级后，井边多了一个晾药布的架子：不管今天医生出不出诊，布都在那儿晾着
   if (state.build.well && lvAdd('well') > 0){
     produced.cloth = (produced.cloth || 0) + lvAdd('well');
   }
