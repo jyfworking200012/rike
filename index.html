@@ -285,7 +285,7 @@ main{padding:14px 16px 20px}
    小镇 v4 —— 打卡招人，人撑起镇子
    ========================================================================== */
 
-const APP_VER = 'v4.6';
+const APP_VER = 'v4.7';
 const SAVE = 'town_v4';
 const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 
@@ -710,6 +710,19 @@ function todayStr(){
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+// 两个 YYYY-MM-DD 之间隔了几天（同一天 = 0）
+function daysBetween(a, b){
+  const t = s => { const p = s.split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); };
+  return Math.max(0, Math.round((t(b) - t(a)) / 86400000));
+}
+
+// 自治系数：你不在的夜里，镇子自己能管多少。
+// 官府是挂机引擎 —— 城主府在时挂机产 75%，不在时 30%，盖它等于雇了个替班管家
+function autonomy(){
+  const l = state.build.hall ? lvOf('hall') : 0;
+  return [0.30, 0.45, 0.60, 0.75][l];
 }
 
 function fresh(){
@@ -1843,6 +1856,79 @@ function eventRate(){
   return Math.min(0.85, 0.35 + popCount() * 0.04) * mult;
 }
 
+/* 无主之夜：断签的日子，镇子自己过。
+   半速干活 × 自治系数；肉照吃；每夜事件率 ×1.3，官府摆平的小事进报表，
+   摆不平的小祸丢点资源 —— 全部不弹窗，回来只看一张汇总账。
+   底线：这一整段最多饿走 1 个人，不清零、不毁镇。 */
+function backlogNights(n, report){
+  const rate = autonomy();
+  const got = {};
+  let safeGain = 0;
+  for (let i = 0; i < n; i++){
+    for (const p of state.pop){
+      const t = TASKS.find(x => x.id === p.id);
+      if (!t || (t.need && !state.build[t.need])) continue;
+      if (t.res === 'safe'){ safeGain += Math.round(rate); continue; }
+      const v = Math.ceil(yieldOf(t) * 0.5) * rate;
+      got[t.res] = (got[t.res] || 0) + v;
+    }
+    if (state.build.well && lvAdd('well') > 0){
+      got.cloth = (got.cloth || 0) + lvAdd('well') * rate;
+    }
+  }
+  // 汇总取整：小数不进账本
+  let producedTxt = [];
+  for (const k in got){
+    const v = Math.round(got[k]);
+    if (!v) continue;
+    state.res[k] += v;
+    producedTxt.push(RES[k].name + '+' + v);
+  }
+  if (safeGain){ state.safe += safeGain; }
+
+  // 吃饭：每夜照吃，缺粮最多走一个人
+  let gone = null, ate = 0;
+  for (let i = 0; i < n; i++){
+    ate += perDay();
+  }
+  if (ate > 0 && state.res.meat < ate){
+    const lack = ate - state.res.meat;
+    state.res.meat = 0;
+    if (state.pop.length) gone = state.pop.pop();
+    report.push({ k: '离了 ' + (n + 1) + ' 天 · 灶凉了', v: '肉 −' + ate + '（缺 ' + lack + '）' + (gone ? ' · ' + gone.who + ' 饿着走了' : ''), cls: 'neg' });
+  } else if (ate > 0){
+    state.res.meat -= ate;
+    report.push({ k: '离了 ' + (n + 1) + ' 天', v: '挂机 ' + (producedTxt.join(' ') || '没人出工') + ' · 吃肉 −' + ate, cls: 'pos' });
+  } else {
+    report.push({ k: '离了 ' + (n + 1) + ' 天', v: '挂机 ' + (producedTxt.join(' ') || '没人出工'), cls: 'pos' });
+  }
+
+  // 事件：每夜掷一次，没人管事麻烦多（×1.3）。最多 1 件浮上来，其余靠官府或变成小损失
+  let shown = null;
+  const hl = state.build.hall ? lvOf('hall') : 0;
+  for (let i = 0; i < n; i++){
+    if (rnd() >= Math.min(0.95, eventRate() * 1.3)) continue;
+    let evt = pickEvent();
+    if (!evt) continue;
+    if (hl && isMinor(evt) && evt.tier <= hl && rnd() < HALL_RATE[Math.min(hl, 3) - 1]){
+      report.push({ k: hallName() + '（替班）', v: evt.title + ' · 摆平了' });
+      continue;
+    }
+    if (!shown && state.pop.length){
+      // 没人管：小事丢点资源，大事更疼（丢双倍 + 安心 −1）。不弹窗、不动人口
+      const big = !isMinor(evt);
+      const drain = (1 + Math.floor(rnd() * Math.min(3, 1 + popCount() / 6))) * (big ? 2 : 1);
+      const pool = ['wood', 'stone', 'meat', 'coin'];
+      const k = pool[Math.floor(rnd() * pool.length)];
+      const real = Math.min(drain, state.res[k] || 0);
+      state.res[k] -= real;
+      if (big) state.safe = Math.max(0, state.safe - 1);
+      report.push({ k: '没人管 · ' + evt.title, v: RES[k].name + ' −' + real + (big ? ' · 人心慌了' : ''), cls: 'neg' });
+      shown = evt;
+    }
+  }
+}
+
 function doNight(){
   if (state.lastNight === todayStr()){
     toast('今天已经过完一夜了');
@@ -1850,6 +1936,10 @@ function doNight(){
   }
   const report = [];
   let newPeople = [];
+
+  // 0) 无主之夜：断签的日子镇子自己过（补账在最前，今天的账照旧走后面）
+  const gap = state.lastNight ? daysBetween(state.lastNight, todayStr()) : 1;
+  if (gap > 1) backlogNights(gap - 1, report);
 
   // 1) 招募
   const want = TASKS.filter(t => state.checks[t.id] && (!t.need || state.build[t.need]));
