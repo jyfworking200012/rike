@@ -207,7 +207,81 @@ S("window.__night = true;");
 // 直接验证取色函数在夜里返回浅色
 ok('白天小人用深墨', dayInk === '#4a4235', '实际 ' + dayInk);
 
-/* ---------- 11. 四页渲染不炸 ---------- */
+/* ---------- 11. 建筑等级 ---------- */
+S("state = fresh(); state.pop=[{id:'wake',who:'a',since:1},{id:'train',who:'b',since:1},{id:'wash',who:'c',since:1}]; state.build={hut:3,stonehouse:0,trap:0,granary:1,well:0,forge:0,market:0,tower:0,shrine:0}; state.lv={};");
+eq('新档所有建筑 Lv1', S('lvOf("granary")'), 1);
+const eat1 = S('perDay()');
+S("state.lv = { granary: 2 };");
+const eat2 = S('perDay()');
+S("state.lv = { granary: 3 };");
+const eat3 = S('perDay()');
+ok('粮仓升级越吃越少', eat1 >= eat2 && eat2 >= eat3, eat1 + ' / ' + eat2 + ' / ' + eat3);
+ok('粮仓 Lv3 明显比 Lv1 省', eat3 < eat1, eat1 + ' → ' + eat3);
+
+S("state.build = {hut:0,stonehouse:0,trap:0,granary:0,well:0,forge:1,market:1,tower:0,shrine:0}; state.lv={};");
+eq('Lv1 铁匠产 2 铁', S("yieldOf(TASKS.find(t=>t.id==='quit'))"), 2);
+S("state.lv.forge = 3;");
+eq('Lv3 铁匠产 4 铁', S("yieldOf(TASKS.find(t=>t.id==='quit'))"), 4);
+eq('Lv1 账房产 3 钱', S("yieldOf(TASKS.find(t=>t.id==='read'))"), 3);
+S("state.lv.market = 2;");
+eq('Lv2 账房产 4 钱', S("yieldOf(TASKS.find(t=>t.id==='read'))"), 4);
+
+// 井：升级后多出一块公共洗衣台，没人也产布
+S("state.build = {hut:0,stonehouse:0,trap:0,granary:0,well:1,forge:0,market:0,tower:0,shrine:0};");
+S("state.lv = {well:2}; state.pop=[]; state.res={wood:0,stone:0,meat:30,cloth:0,iron:0,coin:0}; state.checks={}; state.lastNight=''; state.day=9; doNight();");
+eq('井 Lv2 没人也产 1 布', S('state.res.cloth'), 1);
+S("state.lv = {well:3}; state.res.cloth=0; state.checks={}; state.lastNight=''; state.day=10; doNight();");
+eq('井 Lv3 没人也产 2 布', S('state.res.cloth'), 2);
+
+// 事件概率：塔和祠堂各自减，叠加更低
+S("state.build = {hut:0,stonehouse:0,trap:0,granary:0,well:0,forge:0,market:0,tower:0,shrine:0}; state.lv={}; state.pop=[{id:'wake',who:'a',since:1}];");
+const ev0 = S('eventRate()');
+S("state.build.shrine=1; state.lv={shrine:1};");
+const evS1 = S('eventRate()');
+S("state.lv={shrine:3};");
+const evS3 = S('eventRate()');
+ok('祠堂 Lv1 砍掉四成事件', evS1 < ev0 * 0.65, ev0.toFixed(3) + ' → ' + evS1.toFixed(3));
+ok('祠堂 Lv3 比 Lv1 还低', evS3 < evS1, evS1.toFixed(3) + ' → ' + evS3.toFixed(3));
+S("state.build.tower=1; state.lv={shrine:3,tower:3};");
+const evBoth = S('eventRate()');
+ok('塔 + 祠堂叠加最低', evBoth < evS3, evS3.toFixed(3) + ' → ' + evBoth.toFixed(3));
+ok('再低也有下限，不会归零', evBoth > 0.05, String(evBoth));
+
+// 升级流程
+function clickUp(id){
+  ctx.__click({ target: { closest(sel){
+    return sel === '[data-up]' ? { dataset: { up: id } } : null;
+  } } });
+}
+S("state.build = {hut:0,stonehouse:0,trap:0,granary:0,well:1,forge:0,market:0,tower:0,shrine:0}; state.lv={};");
+S("state.res = {wood:50,stone:50,meat:30,cloth:0,iron:50,coin:50}; state.pop=[{id:'wake',who:'a',since:1}]; tab='build'; render();");
+ok('已建成的建筑显示 Lv1', nodes['main'].innerHTML.includes('Lv1'));
+ok('有升按钮', nodes['main'].innerHTML.includes('data-up="well"'));
+clickUp('well');
+eq('升到 Lv2', S('lvOf("well")'), 2);
+eq('扣了 18 石', S('state.res.stone'), 32);
+ok('升级写进日志', S('state.log.length') > 0);
+
+S("state.lv={well:3}; state.res.stone=100; tab='build'; render();");
+ok('Lv3 不再显示升按钮', !nodes['main'].innerHTML.includes('data-up="well"'));
+ok('Lv3 显示封顶', nodes['main'].innerHTML.includes('封顶'));
+
+// 外观：等级越高，画出来的东西越多
+S("state.build = {hut:0,stonehouse:0,trap:0,granary:0,well:1,forge:0,market:0,tower:0,shrine:0}; state.pop=[]; state.checks={};");
+S("state.lv={well:1};");
+const well1 = S('sceneBody()');
+S("state.lv={well:3};");
+const well3 = S('sceneBody()');
+ok('Lv3 的井比 Lv1 多画了部件', well3.length > well1.length + 80, well1.length + ' → ' + well3.length);
+
+// 老存档迁移：没有 lv 字段不能把人家房子降级
+store['town_v4'] = JSON.stringify({ v:4, day:5, build:{granary:1}, pop:[], res:{}, checks:{}, log:[] });
+S("state=null; load();");
+eq('老存档按 Lv1 算', S('lvOf("granary")'), 1);
+ok('load 时补了空 lv 对象', S('typeof state.lv') === 'object' && S('state.lv') !== null);
+
+/* ---------- 12. 四页渲染不炸 ---------- */
+S("state = fresh(); state.pop=[{id:'wake',who:'a',since:1}]; state.build={hut:1,stonehouse:0,trap:0,granary:0,well:0,forge:0,market:0,tower:0,shrine:0}; state.checks={};");
 let rErr = null;
 try {
   S("state.pend=null; state.legacy=null; tab='today'; render();");
@@ -220,12 +294,12 @@ S("tab='today'; render();");
 ok('今天页有打卡项', nodes['main'].innerHTML.includes('早起'));
 ok('今天页有过夜按钮', nodes['main'].innerHTML.includes('过 夜'));
 
-/* ---------- 12. 存档 ---------- */
+/* ---------- 13. 存档 ---------- */
 S('save();');
 ok('存档写进去了', store['town_v4'] !== undefined && store['town_v4'].length > 50);
 
 /* ---------- 输出 ---------- */
-console.log('\n小镇 v4.2 自检（动效 + 人物层）');
+console.log('\n小镇 v4.3 自检（动效 + 人物层 + 建筑等级）');
 console.log('─'.repeat(52));
 if (fails.length){
   console.log('失败项：');
