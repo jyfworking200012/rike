@@ -6,7 +6,7 @@
  *      早期版本把 index.html 也做成 cache-first，导致新版本推上去了手机还看旧页面。
  *   3. 其余静态资源（字体、图标）走 cache-first，快，且改得少。
  */
-const CACHE = 'rike-v5';
+const CACHE = 'town-v1';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 // HTML 入口：网络优先
@@ -66,7 +66,8 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// 允许页面主动要求跳过等待
+// 允许页面主动要求跳过等待 / 检查更新
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
+  if (e.data === 'CHECK') self.registration.update().catch(() => {});
 });
