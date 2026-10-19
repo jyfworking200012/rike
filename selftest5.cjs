@@ -441,8 +441,64 @@ S("let __aiDone = 0, __aiErr = ''; aiGenerate().then(function(){ __aiDone = 1; }
 S('save();');
 ok('存档写进去了', store['town_v4'] !== undefined && store['town_v4'].length > 50);
 
+/* ---------- 18. v4.7：离线衰减（无主之夜） ---------- */
+// 日期差：同日 0、跨月、跨年、未来日期钳 0
+eq('同日隔 0 天', S("daysBetween('2026-10-19','2026-10-19')"), 0);
+eq('跨月隔 3 天', S("daysBetween('2026-09-30','2026-10-03')"), 3);
+eq('跨年隔 1 天', S("daysBetween('2026-12-31','2027-01-01')"), 1);
+eq('未来日期钳 0', S("daysBetween('2026-10-21','2026-10-19')"), 0);
+
+// 自治系数四档
+S("state.build.hall = 0;");
+eq('无官府 30%', S("autonomy()"), 0.30);
+S("state.build.hall = 1; state.lv.hall = 1;");
+eq('村长家 45%', S("autonomy()"), 0.45);
+S("state.lv.hall = 2;");
+eq('镇长家 60%', S("autonomy()"), 0.60);
+S("state.lv.hall = 3;");
+eq('城主府 75%', S("autonomy()"), 0.75);
+
+// 无主之夜：产出、消耗、底线（rnd 钳 0.99 免事件干扰，单测完恢复）
+// build 显式清零：前面的段落会留满配建筑（粮仓改耗肉、陷阱加肉产），不重置就断言错账
+S("rnd = () => 0.99;");
+S("state.grudges = {}; state.pend = null; state.safe = 2;");
+S("state.build = { hut:0, stonehouse:0, trap:0, granary:0, well:0, forge:0, market:0, tower:0, shrine:0, hall:1 }; state.lv = { hall:3 };");
+S("state.pop = [{id:'wake',who:'老陈',since:1},{id:'train',who:'阿岩',since:2},{id:'wash',who:'苏姐',since:3},{id:'sleep',who:'灯',since:4}];");
+S("state.build.wake = 1;");
+S("state.res = { wood:50, stone:20, meat:20, cloth:0, iron:9, coin:9 };");
+const rep0 = S("(function(){ const r = []; backlogNights(2, r); return r; })()");
+// 产出：樵夫 ceil(5/2)=3 ×0.75×2夜=4.5→5 木；猎人/医生 ceil(1)×0.75×2=1.5→round 2；守夜 safe round(0.75)×2=2
+ok('挂机产出 = 半速 × 自治 75% × 2 夜',
+  S("state.res.wood") === 55 && S("state.res.cloth") === 2 && S("state.safe") === 4);
+ok('肉：产 +2，吃全镇 2/夜 × 2 夜 = 4 → 22−4 = 18', S("state.res.meat") === 18);
+ok('报表是汇总不是流水账', String(rep0.length) >= 1 && String(rep0[0].k).includes('离了 3 天'));
+ok('无主之夜不来人', S("state.pop.length") === 4);
+ok('无主之夜不弹事件', S("state.pend") === null);
+S("rnd = function(){ return Math.random(); };");
+
+// 缺粮底线：缺再多也最多走 1 人
+S("rnd = () => 0.99;");
+S("state.res.meat = 0;");
+S("(function(){ const r = []; backlogNights(4, r); })()");
+eq('缺 4 夜的粮只走 1 人（4 → 3）', S("state.pop.length"), 3);
+S("rnd = function(){ return Math.random(); };");
+
+// doNight 接线：断 3 天真的触发补账（补 2 夜：樵夫 3×0.75×2=4.5→5 木；吃 2 夜肉）
+S("localStorage.removeItem('rike_ai');");   // doNight 期间无 key，不触发 aiGenerate（fetch 计数保住）
+S("const d3 = new Date(Date.now() - 3 * 86400000); const p2 = n => String(n).padStart(2,'0');");
+S("state.lastNight = d3.getFullYear() + '-' + p2(d3.getMonth()+1) + '-' + p2(d3.getDate());");
+S("state.res = { wood:10, stone:5, meat:30, cloth:0, iron:5, coin:5 };");
+S("state.checks = {}; state.pop = [{id:'wake',who:'老陈',since:1}];");
+S("rnd = () => 0.99; doNight();");
+S("rnd = function(){ return Math.random(); };");
+eq('补账 2 夜 + 今天夜的木（10+5+5）', S("state.res.wood"), 20);
+eq('吃肉 3 夜（2 补 + 1 今）', S("state.res.meat"), 30 - 2 - 1);
+ok('过夜后 lastNight 归位今天', S("state.lastNight") === S("todayStr()"));
+// 把 key 写回：异步 flush 时 aiGenerate 的成功路径要靠它记 lastOk（aiSet 只在带 key 时写）
+S("localStorage.setItem('rike_ai', JSON.stringify({key:'sk-test', ep:'https://api.test/v1', model:'m1'}));");
+
 /* ---------- 输出 ---------- */
-console.log('\n小镇 v4.6 自检（记仇引擎 + 镇长家 + AI 参谋）');
+console.log('\n小镇 v4.7 自检（离线衰减 + 记仇 + 官府 + AI 参谋）');
 console.log('─'.repeat(52));
 if (fails.length){
   console.log('失败项：');
@@ -457,12 +513,13 @@ setImmediate(() => {
   ok('生成成功写进池子和日志', S("EVENTS.some(x => x.ai && x.title === '说书新段')") === true &&
     S("state.log.some(l => l.t.includes('说书新段'))") === true);
   ok('成功后记了 lastOk、清了 lastErr（' + S("__aiErr") + '）', (() => {
-    const c = S("aiCfg()");
-    return c.lastOk > 0 && !c.lastErr;
+    const c = S("aiCfg()");   // flush 发生在 18 节 removeItem 之后，setItem 会把它写回
+    return c && c.lastOk > 0 && !c.lastErr;
   })());
   S("localStorage.removeItem('rike_ai');");
   console.log('');
   console.log('AI 异步段补测完成：' + pass + ' 通过 / ' + fail + ' 失败');
+  if (fails.length) fails.forEach(f => console.log('  ✗ ' + f));
   process.exit(fail === 0 ? 0 : 1);
 });
 
