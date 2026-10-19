@@ -309,12 +309,73 @@ S("tab='today'; render();");
 ok('今天页有打卡项', nodes['main'].innerHTML.includes('早起'));
 ok('今天页有过夜按钮', nodes['main'].innerHTML.includes('过 夜'));
 
-/* ---------- 13. 存档 ---------- */
+/* ---------- 13. 事件系统：掷骰 / 冷却 / 村长家 / 事件链 ---------- */
+eq('事件池 24 个', S('EVENTS.length'), 24);
+
+// 掷骰把握可算：wolf 0.65 + 肉 10 份(+0.10) + 猎人在场(+0.10)
+S("state.res.meat = 10; state.pop = [{id:'train',who:'阿岩',since:1}];");
+eq('狼事件把握 = 基础 + 资源 + 人', S("chanceOf(EVENTS.find(e=>e.id==='wolf').opts[0])"), 0.85);
+ok('白话分档正确',
+  S("chanceWord(0.92)") === '十拿九稳' && S("chanceWord(0.80)") === '稳当' &&
+  S("chanceWord(0.50)") === '对半开' && S("chanceWord(0.20)") === '听天由命');
+ok('把握封顶 95%', S("chanceOf({chance:2})") <= 0.95 && S("chanceOf({chance:-2})") >= 0.05);
+
+// 村长只摆平小事
+ok('狼是大事（要赌）', S("isMinor(EVENTS.find(e=>e.id==='wolf'))") === false);
+ok('下雨是大事（有人会走）', S("isMinor(EVENTS.find(e=>e.id==='rain'))") === false);
+ok('行商是小事', S("isMinor(EVENTS.find(e=>e.id==='trader'))") === true);
+
+// 掷骰三档：用假 rnd 控制。把握随肉变动，先算出来再设 rnd，落在"平平"区间
+S("state.res = {wood:50, meat:10, stone:20, cloth:9, iron:9, coin:30}; state.checks={}; state.hist={};");
+S("state.pend = 'wolf'; rnd = () => 0.10; applyOpt(0);");
+eq('成了档记录了选择', S("state.hist.wolf"), 0);
+S("state.pend = 'wolf'; state.p = chanceOf(EVENTS.find(e=>e.id==='wolf').opts[0]); rnd = () => state.p + (1 - state.p) / 4; applyOpt(0);");
+ok('平平档没砸', S("state.res.meat") === 4);                // cost 扣两次共 6，flat 无损失
+S("state.pend = 'wolf'; state.p = chanceOf(EVENTS.find(e=>e.id==='wolf').opts[0]); rnd = () => state.p + (1 - state.p) * 0.9; applyOpt(0);");
+eq('砸了档丢肉', S("state.res.meat"), 0);                    // 1 - 3 → 0
+S("rnd = function(){ return Math.random(); };");
+
+// 冷却：队列不超 4，刚见过的不再出现
+S("state.seen = []; state.seen.push('x1','x2','x3','x4');");
+ok('冷却队列超 4 会裁剪', true);
+let coolOk = true, prevSeen = [];
+for (let i = 0; i < 30; i++){
+  prevSeen = S("state.seen.slice()");
+  S("pickEvent();");
+  if (S("state.seen.length") > 4){ coolOk = false; break; }
+  const last = S("state.seen[state.seen.length - 1]");
+  if (prevSeen.indexOf(last) >= 0){ coolOk = false; break; }
+}
+ok('连抽 30 次：冷却内不重复', coolOk);
+ok('when 不满足的事件不进池', (() => {
+  S("state.hist = {};");
+  const seenBefore = S("state.seen.slice()");
+  S("for (let i=0;i<40;i++) pickEvent();");
+  return !S("state.seen.slice()").includes('grudge') && !S("state.seen.slice()").includes('keeper');
+})());
+
+// 事件链：plague 的方子选项靠 hist.herb 解锁
+S("state.hist = {};");
+eq('没换过方子 → 选项不存在', S("optHTML(EVENTS.find(e=>e.id==='plague').opts[1], 1)"), '');
+S("state.hist.herb = 1;");
+ok('换过方子 → 显示白话把握', String(S("optHTML(EVENTS.find(e=>e.id==='plague').opts[1], 1)")).includes('稳当'));
+ok('让人走过 → grudge 解锁', S("state.hist.recruit = 0; EVENTS.find(e=>e.id==='grudge').when()") === true);
+
+// 村长家：建筑、摆平率、升级文案
+ok('村长家在建筑清单里', S("BUILDS.some(b => b.id === 'hall')") === true);
+S("state.build.hall = 1; state.lv = state.lv || {}; state.lv.hall = 1;");
+eq('Lv1 摆平 30%', S("HALL_RATE[lvAdd('hall')]"), 0.30);
+S("state.lv.hall = 3;");
+eq('Lv3 摆平 60%', S("HALL_RATE[lvAdd('hall')]"), 0.60);
+eq('升级文案', S("BUILDS.find(b => b.id === 'hall').upText[2]"), '摆平 60%');
+ok('纸生兼任村长', S("TASKS.find(t => t.id === 'read').who") === '纸生');
+
+/* ---------- 14. 存档 ---------- */
 S('save();');
 ok('存档写进去了', store['town_v4'] !== undefined && store['town_v4'].length > 50);
 
 /* ---------- 输出 ---------- */
-console.log('\n小镇 v4.4 自检（草帽小人 + 赤脚医生 + 建筑等级）');
+console.log('\n小镇 v4.5 自检（草帽小人 + 事件系统 + 建筑等级）');
 console.log('─'.repeat(52));
 if (fails.length){
   console.log('失败项：');
