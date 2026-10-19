@@ -310,7 +310,7 @@ ok('今天页有打卡项', nodes['main'].innerHTML.includes('早起'));
 ok('今天页有过夜按钮', nodes['main'].innerHTML.includes('过 夜'));
 
 /* ---------- 13. 事件系统：掷骰 / 冷却 / 村长家 / 事件链 ---------- */
-eq('事件池 24 个', S('EVENTS.length'), 24);
+eq('事件池 28 个', S('EVENTS.length'), 28);
 
 // 掷骰把握可算：wolf 0.65 + 肉 10 份(+0.10) + 猎人在场(+0.10)
 S("state.res.meat = 10; state.pop = [{id:'train',who:'阿岩',since:1}];");
@@ -367,15 +367,82 @@ S("state.build.hall = 1; state.lv = state.lv || {}; state.lv.hall = 1;");
 eq('Lv1 摆平 30%', S("HALL_RATE[lvAdd('hall')]"), 0.30);
 S("state.lv.hall = 3;");
 eq('Lv3 摆平 60%', S("HALL_RATE[lvAdd('hall')]"), 0.60);
-eq('升级文案', S("BUILDS.find(b => b.id === 'hall').upText[2]"), '摆平 60%');
+eq('升级文案', S("BUILDS.find(b => b.id === 'hall').upText[2]"), '升城主府 · 摆平 60%');
 ok('纸生兼任村长', S("TASKS.find(t => t.id === 'read').who") === '纸生');
+
+/* ---------- 15. v4.6：通用记仇引擎 ---------- */
+S("state.grudges = {};");
+eq('没赶过人 → 寻仇的不进池', (() => {
+  S("for (let i=0;i<40;i++) pickEvent();");
+  return S("state.seen.slice()").includes('beggar2') || S("state.seen.slice()").includes('opera2');
+})(), false);
+ok('赶走乞丐 → 记了 beggar 这笔账', (() => {
+  S("state.pend = 'beggar'; state.res.meat = 0; applyOpt(1);");   // 没肉，只能赶
+  return S("state.grudges.beggar") > 0;
+})());
+ok('记了账 → beggar2 进池且权重 x3', (() => {
+  let saw = 0;
+  for (let i = 0; i < 30; i++){ const e = S("pickEvent()"); if (e && e.id === 'beggar2') saw++; }
+  return saw > 0;
+})());
+ok('销账：来过一回后 beggar2 不再进池', (() => {
+  for (let i = 0; i < 30; i++){ const e = S("pickEvent()"); if (e && e.id === 'beggar2') return false; }
+  return true;
+})());
+ok('记仇的选项带警示语', String(S("optHTML(EVENTS.find(e=>e.id==='beggar').opts[1], 1)")).includes('这笔账'));
+
+/* ---------- 16. v4.6：镇长家三级形态 ---------- */
+S("state.lv.hall = 1;");
+eq('Lv1 叫村长家', S("hallName()"), '村长家');
+S("state.lv.hall = 2;");
+eq('Lv2 叫镇长家', S("hallName()"), '镇长家');
+S("state.lv.hall = 3;");
+eq('Lv3 叫城主府', S("hallName()"), '城主府');
+ok('镇子里确有 tier2 小事，镇长家才吃得下（协议自洽）',
+  S("EVENTS.filter(e => e.tier === 2).some(e => isMinor(e) && !e.grudgeOn)") === true);
+ok('大事（含赌局/警示）官府不碰',
+  S("isMinor(EVENTS.find(e=>e.id==='wolf'))") === false &&
+  S("isMinor(EVENTS.find(e=>e.id==='opera'))") === false);   // 有警示语就算大事
+
+/* ---------- 17. v4.6：AI 参谋（语义-数值分离） ---------- */
+// 校验器：好件进来
+const vGood = S(`validateAIEvt({ title:'桥头卖杏的', text:'一个挑担的在桥头叫卖杏子，说是山那头今年结得多。',
+  cat:'外', opts:[{lb:'买两筐',res:'杏子分了，孩子们把核种在河边。',kind:'gain'},{lb:'摇头走开',res:'担子颤了颤，叫卖声往下游去了。',kind:'nothing'}] })`);
+ok('好件通过校验', vGood !== null && vGood.title === '桥头卖杏的' && vGood.cat === '外');
+ok('校验器剥离 HTML 注入', (() => {
+  const v = S("validateAIEvt({ title:'<script>x</script>标题', text:'这是一段足够长长长长长长长长长长长长长长长长长长长长长长长长长长长长长的正文', opts:[{lb:'a',res:'结果结果',kind:'gain'},{lb:'b',res:'结果结果',kind:'nothing'}] })");
+  return v === null || (!v.title.includes('<') && !v.title.includes('script'));
+})());
+ok('非法 cat 归到「外」', S("validateAIEvt({title:'标题在',text:'一段足够长长长长长长长长长长长长长长长长长长长长长的正文',cat:'科幻',opts:[{lb:'做法一',res:'结果如此',kind:'cost'},{lb:'做法二',res:'结果那般',kind:'gain'}]}).cat") === '外');
+ok('错误 kind 落到 nothing', (() => {
+  const v = S("validateAIEvt({title:'标题在',text:'一段足够长长长长长长长长长长长长长长长长长长长长长的正文',opts:[{lb:'做法一',res:'结果如此',kind:'hack_all_res'},{lb:'做法二',res:'结果那般',kind:'gain'}]})");
+  return v !== null && v.opts[0].kind === 'nothing';
+})());
+ok('选项数量不对拒收', S("validateAIEvt({title:'标题在',text:'一段足够长长长长长长长长长长长长长长长长长长长长长的正文',opts:[{lb:'一',res:'结果',kind:'gain'}]})") === null);
+// 注入：数值全来自白名单，AI 碰不到
+S("aiInject(validateAIEvt({title:'桥头卖杏的',text:'一个挑担的在桥头叫卖杏子，说是山那头今年结得多。',cat:'外',opts:[{lb:'买两筐',res:'杏子分了。',kind:'gain'},{lb:'摇头走开',res:'叫卖声去了下游。',kind:'cost'}]}))");
+eq('注入后池子 29', S('EVENTS.length'), 29);
+ok('AI 事件数值来自白名单（gain=wood2 coin1）', (() => {
+  const e = S("EVENTS.find(x => x.ai)");
+  return e.opts[0].good.wood === 2 && e.opts[0].good.coin === 1 && e.opts[1].cost.meat === 3;
+})());
+ok('AI 事件 tier 跟人口走', S("EVENTS.find(x => x.ai).tier") === 2);
+// 池上限 3 件
+for (let i = 0; i < 4; i++){
+  S("aiInject({ title:'试写第" + i + "', text:'一段足够长长长长长长长长长长长长长的正文内容', cat:'村', opts:[{lb:'做法一',res:'结果如此',kind:'gain'},{lb:'做法二',res:'结果那般',kind:'nothing'}] })");
+}
+eq('AI 事件最多留 3 件', S("EVENTS.filter(x => x.ai).length"), 3);
+// mock fetch + 全流程：走真实 aiGenerate（异步，vm 里 promise 用 then 钩子）
+S("localStorage.setItem('rike_ai', JSON.stringify({key:'sk-test', ep:'https://api.test/v1', model:'m1'}));");
+S("let __fetchCalls = 0; fetch = async (u, o) => { __fetchCalls++; return { json: async () => ({ choices: [{ message: { content: JSON.stringify({ title:'说书新段', text:'说书人把折扇一收，讲起山那头的事。', cat:'外', opts:[{lb:'听着',res:'讲完了，各自散去。',kind:'nothing'},{lb:'赏他一碗',res:'说书人作了个揖。',kind:'gain'}] }) } }] }) }; };");
+S("let __aiDone = 0, __aiErr = ''; aiGenerate().then(function(){ __aiDone = 1; }, function(e){ __aiErr = String(e && e.message || e); });");
 
 /* ---------- 14. 存档 ---------- */
 S('save();');
 ok('存档写进去了', store['town_v4'] !== undefined && store['town_v4'].length > 50);
 
 /* ---------- 输出 ---------- */
-console.log('\n小镇 v4.5 自检（草帽小人 + 事件系统 + 建筑等级）');
+console.log('\n小镇 v4.6 自检（记仇引擎 + 镇长家 + AI 参谋）');
 console.log('─'.repeat(52));
 if (fails.length){
   console.log('失败项：');
@@ -383,4 +450,19 @@ if (fails.length){
   console.log('');
 }
 console.log((fail === 0 ? '全部通过' : '有失败') + '：' + pass + ' 通过 / ' + fail + ' 失败');
-process.exit(fail === 0 ? 0 : 1);
+
+// AI 生成的 promise 要等微任务 flush —— 放最后，flush 完再补三件断言并定退出码
+setImmediate(() => {
+  ok('AI 生成走了一次 fetch', Number(S("__fetchCalls")) === 1);
+  ok('生成成功写进池子和日志', S("EVENTS.some(x => x.ai && x.title === '说书新段')") === true &&
+    S("state.log.some(l => l.t.includes('说书新段'))") === true);
+  ok('成功后记了 lastOk、清了 lastErr（' + S("__aiErr") + '）', (() => {
+    const c = S("aiCfg()");
+    return c.lastOk > 0 && !c.lastErr;
+  })());
+  S("localStorage.removeItem('rike_ai');");
+  console.log('');
+  console.log('AI 异步段补测完成：' + pass + ' 通过 / ' + fail + ' 失败');
+  process.exit(fail === 0 ? 0 : 1);
+});
+
