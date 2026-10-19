@@ -56,10 +56,14 @@ body{
 .res i{font-style:normal;font-size:11px;color:#a39887}
 
 /* ---------- 小镇 ---------- */
-#town{position:relative;margin:2px 10px 0;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(90,70,40,.08)}
+#town{position:relative;margin:2px 10px 0;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(90,70,40,.08);aspect-ratio:1.8}
 #town svg{display:block;width:100%;height:auto}
-#town .cap{position:absolute;left:12px;bottom:8px;font-size:11px;color:rgba(255,255,255,.72);letter-spacing:1px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
-#town .pop{position:absolute;right:12px;bottom:8px;font-size:11px;color:rgba(255,255,255,.78);text-shadow:0 1px 3px rgba(0,0,0,.4)}
+#town #scene,#town #folks{position:absolute;left:0;top:0;width:100%;height:100%;height:100%}
+#town #folks{pointer-events:none}
+#town .cap{position:absolute;left:10px;top:8px;font-size:11px;color:#5a5040;letter-spacing:1px;
+  background:rgba(255,252,244,.8);padding:2px 8px;border-radius:9px;box-shadow:0 1px 3px rgba(90,70,40,.12)}
+#town .pop{position:absolute;right:10px;top:8px;font-size:11px;color:#5a5040;
+  background:rgba(255,252,244,.8);padding:2px 8px;border-radius:9px;box-shadow:0 1px 3px rgba(90,70,40,.12)}
 
 /* ---------- 页面 ---------- */
 main{padding:14px 16px 20px}
@@ -187,12 +191,49 @@ main{padding:14px 16px 20px}
 .toast.show{opacity:1}
 
 /* SVG 动效 */
-.walk{animation:walk 9s ease-in-out infinite}
-@keyframes walk{0%,100%{transform:translateX(0)}50%{transform:translateX(14px)}}
 .smoke{animation:smoke 4.5s ease-in-out infinite}
 @keyframes smoke{0%{opacity:.28;transform:translateY(0)}50%{opacity:.5;transform:translateY(-5px)}100%{opacity:.28;transform:translateY(0)}}
 .flick{animation:flick 3.2s ease-in-out infinite}
 @keyframes flick{0%,100%{opacity:1}45%{opacity:.82}70%{opacity:.94}}
+
+/* 建筑微动效：每个部件单独转，不是整栋转 */
+.spin{animation:spin 7s linear infinite;transform-box:fill-box;transform-origin:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sway{animation:sway 7.5s ease-in-out infinite;transform-box:fill-box;transform-origin:bottom center}
+@keyframes sway{0%,100%{transform:rotate(-.8deg)}50%{transform:rotate(.8deg)}}
+.flag{animation:flag 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:left center}
+@keyframes flag{0%,100%{transform:scaleX(1) skewY(0deg)}50%{transform:scaleX(.78) skewY(-4deg)}}
+.spark{animation:spark 2.1s ease-out infinite}
+@keyframes spark{0%{opacity:0;transform:translateY(0)}18%{opacity:.95}100%{opacity:0;transform:translateY(-14px)}}
+.ripple{animation:ripple 3.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes ripple{0%,100%{transform:scaleX(1);opacity:.3}50%{transform:scaleX(1.25);opacity:.55}}
+.glow{animation:glow 3.1s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* 人物：位置由 JS 每帧写 transform，动作由 CSS 演 */
+.folk .body{display:block}
+.folk.walking .body{animation:bob .44s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.35px)}}
+.folk.working .body{animation:work 2.4s ease-in-out infinite}
+@keyframes work{0%,100%{transform:translateY(0)}30%{transform:translateY(1.2px)}55%{transform:translateY(0)}}
+.folk.idle .body{animation:idleb .44s ease-in-out infinite}
+@keyframes idleb{0%,100%{transform:translateY(0)}50%{transform:translateY(-.5px)}}
+
+/* 飘字：打卡派工、过夜收成。米白药丸 + 深字，压在房子上也不糊 */
+.float{
+  position:absolute;transform:translate(-50%,0);
+  font-size:12.5px;font-weight:700;color:#3a3020;letter-spacing:.3px;
+  background:rgba(255,250,238,.95);border:1px solid rgba(140,120,90,.3);
+  padding:2px 8px;border-radius:10px;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(80,60,30,.18);pointer-events:none;z-index:6;
+  animation:floataway 1.75s ease-out forwards;
+}
+@keyframes floataway{
+  0%{opacity:0;transform:translate(-50%,8px) scale(.94)}
+  10%{opacity:1;transform:translate(-50%,0) scale(1)}
+  70%{opacity:1;transform:translate(-50%,-10px) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-24px) scale(1)}
+}
 </style>
 </head>
 <body>
@@ -232,7 +273,7 @@ main{padding:14px 16px 20px}
    小镇 v4 —— 打卡招人，人撑起镇子
    ========================================================================== */
 
-const APP_VER = 'v4.1';
+const APP_VER = 'v4.2';
 const SAVE = 'town_v4';
 const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 
@@ -491,6 +532,59 @@ function useIcon(name, cx, by, size, color, op){
     (op === undefined ? '' : ' opacity="' + op + '"') + '/>';
 }
 
+/* 建筑上会动的那个部件。动的是部件，不是整栋房子 —— 房子晃起来像地震 */
+function attach(b, cx, by, sz, n){
+  const ink = n ? '#e2cfa6' : '#6b5334';
+  const warm = n ? '#f0cf85' : '#c9a86a';
+  let s = '';
+  if (b.icon === 'granary'){
+    // 风车叶：全屏唯一匀速运动，眼睛会先扫到它
+    const cy = by - sz * 0.8, r = sz * 0.23;
+    let leaf = '';
+    for (let k = 0; k < 4; k++){
+      const a = k * Math.PI / 2;
+      const ex = Math.cos(a) * r, ey = Math.sin(a) * r;
+      const nx = -Math.sin(a) * r * 0.2, ny = Math.cos(a) * r * 0.2;
+      leaf += '<path d="M0 0 L' + ex.toFixed(1) + ' ' + ey.toFixed(1) + ' L' +
+        (ex + nx).toFixed(1) + ' ' + (ey + ny).toFixed(1) + ' Z" fill="' + ink + '" opacity=".5"/>';
+    }
+    s += '<g transform="translate(' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"><g class="spin">' + leaf + '</g></g>';
+  }
+  if (b.icon === 'forge'){
+    // 火星：三个点错峰上升，铁在被打
+    const fy = by - sz * 0.42;
+    for (let k = 0; k < 3; k++){
+      s += '<circle class="spark" style="animation-delay:' + (k * 0.72).toFixed(2) + 's" cx="' +
+        (cx + (k - 1) * sz * 0.13).toFixed(1) + '" cy="' + fy.toFixed(1) +
+        '" r="' + (0.75 + k * 0.16).toFixed(2) + '" fill="#f2b45c"/>';
+    }
+  }
+  if (b.icon === 'market'){
+    // 旗：逢五开市，旗平时也挂着
+    const tx = cx + sz * 0.34, ty = by - sz * 0.72;
+    s += '<path d="M' + tx.toFixed(1) + ' ' + ty.toFixed(1) + ' v-' + (sz * 0.2).toFixed(1) +
+      '" stroke="' + ink + '" stroke-width="1.1" opacity=".6"/>';
+    s += '<path class="flag" d="M' + tx.toFixed(1) + ' ' + (ty - sz * 0.2).toFixed(1) +
+      ' l' + (sz * 0.15).toFixed(1) + ' ' + (sz * 0.05).toFixed(1) +
+      ' l-' + (sz * 0.15).toFixed(1) + ' ' + (sz * 0.05).toFixed(1) + ' Z" fill="' + warm + '" opacity=".72"/>';
+  }
+  if (b.icon === 'well'){
+    s += '<ellipse class="ripple" cx="' + cx.toFixed(1) + '" cy="' + (by - sz * 0.12).toFixed(1) +
+      '" rx="' + (sz * 0.15).toFixed(1) + '" ry="2" fill="' + (n ? '#9fb4c4' : '#a8c0cc') + '"/>';
+  }
+  if (b.icon === 'tower'){
+    // 顶灯：夜里才亮得明显
+    s += '<circle class="glow" cx="' + cx.toFixed(1) + '" cy="' + (by - sz * 0.82).toFixed(1) +
+      '" r="' + (sz * 0.09).toFixed(1) + '" fill="' + warm + '" opacity=".7"/>';
+  }
+  if (b.icon === 'shrine'){
+    s += '<path class="smoke" style="animation-delay:1.1s" d="M' + (cx - sz * 0.16).toFixed(1) + ' ' +
+      (by - sz * 0.5).toFixed(1) + ' q3 -7 0 -12" stroke="' + (n ? '#c9bfa8' : '#a89e8c') +
+      '" stroke-width="1.2" fill="none" opacity=".34"/>';
+  }
+  return s;
+}
+
 /* 建筑清单：前排住人，后排干活 */
 function buildingSlots(){
   const B = state.build || {};
@@ -520,7 +614,8 @@ function rowPos(i, n, sizeMax){
   return { x: pad + i * (span / (n - 1)), size: size };
 }
 
-function townSVG(){
+/* 场景层：天空 / 山 / 建筑 / 火堆。人不在这一层 —— 见 folkLayer() */
+function sceneBody(){
   const c = skyColors();
   const n = c.night;
   const people = popCount();
@@ -529,7 +624,7 @@ function townSVG(){
   const bldgBack = n ? '#b09e83' : '#9c8663';
   const roofInk = n ? '#e0cda6' : '#4f3a26';
 
-  let s = '<svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice">';
+  let s = '';
 
   s += '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">' +
        '<stop offset="0" stop-color="' + c.a + '"/><stop offset="1" stop-color="' + c.b + '"/></linearGradient>' +
@@ -580,6 +675,7 @@ function townSVG(){
     const p = rowPos(i, back.length, 56);
     s += '<ellipse cx="' + p.x + '" cy="152" rx="' + (p.size * 0.4) + '" ry="2.2" fill="' + (n ? '#2b2a32' : '#bfb39a') + '" opacity=".26"/>';
     s += useIcon(b.icon, p.x, 150, p.size, bldgBack, 0.8);
+    s += attach(b, p.x, 150, p.size, n);
   });
 
   // 起点：那间破屋（一栋房都没盖时）
@@ -592,46 +688,22 @@ function townSVG(){
   // 前排
   front.forEach((b, i) => {
     const p = rowPos(i, front.length, 78);
-    s += '<ellipse cx="' + p.x + '" cy="194" rx="' + (p.size * 0.4) + '" ry="2.4" fill="' + (n ? '#24232b' : '#bfb39a') + '" opacity=".3"/>';
-    s += useIcon(b.icon, p.x, 194, p.size, bldg, 0.95);
+    const sz = p.size;
+    s += '<ellipse cx="' + p.x + '" cy="194" rx="' + (sz * 0.4) + '" ry="2.4" fill="' + (n ? '#24232b' : '#bfb39a') + '" opacity=".3"/>';
+    s += useIcon(b.icon, p.x, 194, sz, bldg, 0.95);
     if (b.smoke){
-      s += '<path class="smoke" d="M' + (p.x + p.size * 0.3) + ' ' + (192 - p.size * 0.9) +
+      // 两缕错峰的烟。一缕像失火，两缕才像有人在做饭
+      s += '<path class="smoke" style="animation-delay:' + (i * 0.6).toFixed(2) + 's" d="M' +
+           (p.x + sz * 0.3).toFixed(1) + ' ' + (192 - sz * 0.9).toFixed(1) +
            ' q4 -8 0 -14 q-4 -7 1 -12" stroke="#a89e8c" stroke-width="1.6" fill="none" opacity=".4"/>';
+      s += '<path class="smoke" style="animation-delay:' + (i * 0.6 + 2.2).toFixed(2) + 's" d="M' +
+           (p.x + sz * 0.22).toFixed(1) + ' ' + (192 - sz * 0.84).toFixed(1) +
+           ' q-3 -7 0 -12 q3 -6 -1 -10" stroke="#b5ac9a" stroke-width="1.2" fill="none" opacity=".24"/>';
     }
+    s += attach(b, p.x, 194, sz, n);
   });
 
-  // 人：站在建筑之间，人多了往上叠成小人群
-  const groups = Math.max(front.length, 1);
-  const perCol = Math.ceil(Math.min(people, 24) / groups);
-  for (let i = 0; i < Math.min(people, 24); i++){
-    const g = Math.floor(i / perCol);
-    const r = i % perCol;
-    const anchor = front.length ? rowPos(Math.min(g, front.length - 1), front.length, 78).x : 180;
-    const side = (r % 2 === 0 ? -1 : 1);
-    const dist = 17 + Math.floor(r / 2) * 12;
-    const jx = ((i * 13) % 11) - 5, jy = ((i * 5) % 3);
-    const px = Math.max(9, Math.min(351, anchor + side * dist + jx));
-    const py = 199.5 - (r % 2) * 3.2 - jy;
-    const col = n ? '#efe9d8' : '#4a4235';
-    s += '<g class="walk" style="animation-delay:' + (i * 0.37) + 's">' +
-      '<circle cx="' + px + '" cy="' + (py - 8) + '" r="2.9" fill="' + col + '"/>' +
-      '<path d="M' + px + ' ' + (py - 5.2) + ' L' + px + ' ' + py +
-      ' M' + px + ' ' + (py - 2.8) + ' L' + (px - 2.8) + ' ' + (py - 0.6) +
-      ' M' + px + ' ' + (py - 2.8) + ' L' + (px + 2.8) + ' ' + (py - 0.6) +
-      '" stroke="' + col + '" stroke-width="1.4" fill="none" stroke-linecap="round"/></g>';
-  }
-
-  // 今天点了、人还没来的：虚影
-  const coming = TASKS.filter(t => state.checks[t.id] && !state.pop.some(p => p.id === t.id) && (!t.need || state.build[t.need]));
-  coming.forEach((t, i) => {
-    const px = 40 + i * 27, py = 176;
-    const cc = n ? '#efe9d8' : '#6b6152';
-    s += '<g opacity=".45"><circle cx="' + px + '" cy="' + (py - 7) + '" r="2.4" fill="none" stroke="' + cc + '" stroke-width="1" stroke-dasharray="2 2"/>' +
-      '<path d="M' + px + ' ' + (py - 4.4) + ' L' + px + ' ' + py +
-      ' M' + px + ' ' + (py - 2.4) + ' L' + (px - 2.1) + ' ' + (py - 0.6) +
-      ' M' + px + ' ' + (py - 2.4) + ' L' + (px + 2.1) + ' ' + (py - 0.6) +
-      '" stroke="' + cc + '" stroke-width="1" stroke-dasharray="2 2" fill="none"/></g>';
-  });
+  // 人不在这一层。他们住在常驻的 #folks 里，这一层重绘也打断不了他们走路。
 
   // 火堆：三个人以上
   if (people >= 3){
@@ -652,12 +724,281 @@ function townSVG(){
     }
   }
 
-  s += '</svg>';
-  const rk = rank();
-  s += '<div class="cap">' + rk.t + '</div>';
-  s += '<div class="pop">' + people + ' / ' + cap() + ' 人</div>';
   return s;
 }
+
+/* ==========================================================================
+   人物层
+   为什么单独一层：场景每次 render 都整块重建，人要是画在场景里，一重绘
+   就把走路打断 —— 打卡正好就是重绘的时机，等于刚出门就被拽回原地。
+   所以人住在常驻的 #folks 里，位置由 rAF 每帧写 transform。
+   ========================================================================== */
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const FOLK = { nodes:new Map(), pos:new Map(), raf:0, last:0, ink:null };
+// 三排街道，间距 14~15px。再密就叠成糖葫芦了 —— 人高才 11px
+const ROW_Y = [198.5, 184, 170];
+
+// 七件事分别去哪儿。没有对应建筑的，去村口或山脚的空地。
+const WORK_AT = {
+  wake:  { at:'left',   label:'上山' },
+  train: { at:'right',  label:'下套' },
+  wash:  { at:'well',   label:'打水' },
+  study: { at:'back',   label:'采石' },
+  quit:  { at:'forge',  label:'打铁' },
+  read:  { at:'market', label:'记账' },
+  sleep: { at:'tower',  label:'巡夜' }
+};
+
+function ensureTownDOM(){
+  const t = document.getElementById('town');
+  if (!t) return null;
+  if (t.dataset.ready) return t;
+  t.dataset.ready = '1';
+  t.innerHTML =
+    '<svg id="scene" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice"></svg>' +
+    '<svg id="folks" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice"></svg>' +
+    '<div class="cap" id="capLabel"></div>' +
+    '<div class="pop" id="popLabel"></div>';
+  return t;
+}
+
+// 站位：人少时一排居中，6 人以上两排，12 人以上三排。
+// 人多的直观感来自"摊开的宽度 + 站到后排去"，不是把点缩小堆在一起。
+// 左右留 36px 边距，别被人数和等级那两个角标压住。
+function slotOf(i, n){
+  if (n === 1) return { x: 180, y: ROW_Y[0], s: 0.92 };
+  const rows = n <= 5 ? 1 : n <= 11 ? 2 : 3;
+  const cols = Math.ceil(n / rows);
+  // 队伍宽度只由人数决定（不是由列数），这样"人多 = 站得宽"才是单调的：
+  // 5 人缩成一小堆，19 人铺满整条街，中间没有回退
+  const width = Math.min(252, 56 + n * 11);
+  // 最小间距 34：再挤就从"一小群人"变成"一排士兵"
+  const gap = cols > 1 ? Math.max(34, width / (cols - 1)) : 0;
+  const stagger = rows > 1 ? Math.min(gap * 0.5, 26) : 0;
+  const x0 = 180 - (gap * (cols - 1) + stagger) / 2;
+  const r = i % rows, c = Math.floor(i / rows);
+  // 排与排错开半个身位。不错开就变成一排竖柱子，像货架不像街
+  const sx = r === 1 ? stagger : r === 2 ? stagger * 0.45 : 0;
+  const jx = ((i * 37) % 9) - 4;
+  const jy = ((i * 53) % 7) * 0.24;
+  return {
+    x: Math.max(30, Math.min(330, x0 + c * gap + sx + jx)),
+    y: ROW_Y[r] - jy,
+    s: [0.92, 0.84, 0.76][r]
+  };
+}
+
+function folkInk(){ return skyColors().night ? '#f7f2e4' : '#4a4235'; }
+
+function paintFolk(id){
+  const st = FOLK.pos.get(id), g = FOLK.nodes.get(id);
+  if (!st || !g) return;
+  g.setAttribute('transform',
+    'translate(' + st.x.toFixed(2) + ' ' + st.y.toFixed(2) + ') scale(' + st.s + ')');
+}
+
+function setFolkMode(id, mode){
+  const g = FOLK.nodes.get(id);
+  if (g) g.setAttribute('class', 'folk ' + (mode === 'walk' ? 'walking' : mode === 'work' ? 'working' : 'idle'));
+}
+
+function createFolk(id, idx, n){
+  const sl = slotOf(idx, n);
+  const col = folkInk();
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'folk idle');
+  // 头 2.5 / 肩 4.6 / 腿 3.1 —— 头身比接近 1:3，远看才像人不像图钉
+  g.innerHTML =
+    '<ellipse cx="0" cy="0.7" rx="3.1" ry="0.85" fill="' + col + '" opacity=".15"/>' +
+    '<g class="body">' +
+      '<circle cx="0" cy="-8.6" r="2.5" fill="' + col + '"/>' +
+      '<path d="M-2.3 -6.5 L2.3 -6.5 L1.5 -3.1 L-1.5 -3.1 Z" fill="' + col + '"/>' +
+      '<path d="M-1.2 -3.1 V0 M1.2 -3.1 V0" stroke="' + col + '" stroke-width="1.1" fill="none" stroke-linecap="round"/>' +
+    '</g>';
+  document.getElementById('folks').appendChild(g);
+  FOLK.nodes.set(id, g);
+  FOLK.pos.set(id, {
+    x: sl.x, y: sl.y, s: sl.s, hx: sl.x, hy: sl.y, tx: sl.x, ty: sl.y,
+    mode: 'idle', phase: Math.random() * 6.28,
+    amp: 2.2 + Math.random() * 2.8, wobble: 0.45 + Math.random() * 0.55,
+    speed: 60, arrive: null, backAt: 0
+  });
+  paintFolk(id);
+}
+
+// 画在场上的人是 popCount()，不只是那 7 个有名字的。
+// 没名字的那部分人是房子带来的住户 —— 他们不产资源，但必须站在那儿，
+// 否则盖了三间木棚，画面还是七个人，"人变多"就白做了。
+function folkIds(){
+  const ids = state.pop.map(p => p.id);
+  const extra = popCount() - ids.length;
+  for (let i = 0; i < extra; i++) ids.push('dwell' + i);
+  return ids;
+}
+
+// 人数变化时增删节点 + 重排站位。正在走/干活的人不动，只更新他家在哪。
+function syncFolks(){
+  if (!ensureTownDOM()) return;
+  const ids = folkIds();
+  const col = folkInk();
+
+  // 昼↔夜换色：直接重建一遍，比逐个元素改属性干净
+  if (FOLK.ink !== col){
+    FOLK.nodes.forEach(g => g.remove());
+    FOLK.nodes.clear();
+    FOLK.pos.clear();
+    FOLK.ink = col;
+  }
+
+  FOLK.nodes.forEach((g, id) => {
+    if (ids.indexOf(id) < 0){ g.remove(); FOLK.nodes.delete(id); FOLK.pos.delete(id); }
+  });
+
+  ids.forEach((id, i) => {
+    if (!FOLK.nodes.has(id)){ createFolk(id, i, ids.length); return; }
+    const st = FOLK.pos.get(id);
+    const sl = slotOf(i, ids.length);
+    st.hx = sl.x; st.hy = sl.y; st.s = sl.s;
+  });
+
+  renderGhosts();
+}
+
+// 今天点了、人还没到：虚影站在镇口，晚上才进来
+let _ghostBox = null;
+
+function renderGhosts(){
+  const f = document.getElementById('folks');
+  if (!f) return;
+  if (!_ghostBox){
+    _ghostBox = document.createElementNS(SVG_NS, 'g');
+    f.appendChild(_ghostBox);
+  }
+  const coming = TASKS.filter(t => state.checks[t.id] && !state.pop.some(p => p.id === t.id) && (!t.need || state.build[t.need]));
+  const cc = skyColors().night ? '#e8e2d2' : '#6b6152';
+  let s = '';
+  coming.forEach((t, i) => {
+    const px = 40 + i * 26, py = 182 + (i % 2) * 5;
+    s += '<g opacity=".55">' +
+      '<circle cx="' + px + '" cy="' + (py - 8.6) + '" r="2.5" fill="none" stroke="' + cc + '" stroke-width=".9" stroke-dasharray="1.6 1.6"/>' +
+      '<path d="M' + (px - 2.1) + ' ' + (py - 6.5) + ' L' + (px + 2.1) + ' ' + (py - 6.5) +
+      ' L' + (px + 1.4) + ' ' + (py - 3.1) + ' L' + (px - 1.4) + ' ' + (py - 3.1) + ' Z" fill="none" stroke="' + cc + '" stroke-width=".9" stroke-dasharray="1.6 1.6"/>' +
+      '<path d="M' + (px - 1.1) + ' ' + (py - 3.1) + ' V' + py + ' M' + (px + 1.1) + ' ' + (py - 3.1) + ' V' + py +
+      '" stroke="' + cc + '" stroke-width=".9" stroke-dasharray="1.6 1.6"/></g>';
+  });
+  _ghostBox.innerHTML = s;
+}
+
+// 建筑的坐标：派工时要知道往哪走
+function spotOf(icon){
+  const { front, back } = buildingSlots();
+  let i = front.findIndex(b => b.icon === icon);
+  if (i >= 0){ const p = rowPos(i, front.length, 78); return { x: p.x, y: 191 }; }
+  i = back.findIndex(b => b.icon === icon);
+  if (i >= 0){ const p = rowPos(i, back.length, 56); return { x: p.x, y: 145 }; }
+  return null;
+}
+
+function workSpot(t){
+  const w = WORK_AT[t.id];
+  // 上山/下套/采石都在坡上，得往上走 —— 只横着挪两下不算"出门干活"
+  if (w.at === 'left')  return { x: 8,   y: 146 };
+  if (w.at === 'right') return { x: 352, y: 146 };
+  if (w.at === 'back')  return { x: 300, y: 154 };
+  return spotOf(w.at) || { x: 180, y: 191 };
+}
+
+// 飘字：位置按 360×200 的坐标系换成百分比，跟 SVG 对齐
+function floatText(x, y, txt, color){
+  const t = ensureTownDOM();
+  if (!t) return;
+  const el = document.createElement('div');
+  el.className = 'float';
+  el.textContent = txt;
+  if (color) el.style.color = color;
+  el.style.left = (x / 360 * 100).toFixed(2) + '%';
+  el.style.top  = (y / 200 * 100).toFixed(2) + '%';
+  t.appendChild(el);
+  setTimeout(() => el.remove(), 1700);
+}
+
+// 打卡 → 派人去干活。注意这里不报数字：资源是过夜才结算的，
+// 现在写 +5 就是在骗人。写"谁去哪"才是真的。
+function dispatchWorker(t){
+  const st = FOLK.pos.get(t.id);
+  if (!st) return;   // 人还在路上，镇口的虚影已经说明这件事了，不用再弹提示
+  const s = workSpot(t);
+  st.tx = s.x; st.ty = s.y; st.mode = 'walk';
+  setFolkMode(t.id, 'walk');
+  st.arrive = () => floatText(s.x, s.y - 15, t.who + ' · ' + WORK_AT[t.id].label);
+}
+
+// 过夜结算完、报表关掉之后放一遍：每个人走到自己干活的地方，冒真实数字
+function playHarvest(g){
+  let delay = 0;
+  for (const t of TASKS){
+    if (!g[t.res]) continue;
+    const st = FOLK.pos.get(t.id);
+    if (!st) continue;
+    const n = g[t.res];
+    const s = workSpot(t);
+    setTimeout(() => {
+      if (!FOLK.pos.has(t.id)) return;
+      st.tx = s.x; st.ty = s.y; st.mode = 'walk';
+      setFolkMode(t.id, 'walk');
+      st.arrive = () => floatText(s.x, s.y - 15, '+' + n + ' ' + (t.res === 'safe' ? '治安' : RES[t.res].name),
+        t.res === 'safe' ? '#8a9a7a' : RES[t.res].color);
+    }, delay);
+    delay += 260;
+  }
+}
+
+function folkTick(ts){
+  const dt = FOLK.last ? Math.min(64, ts - FOLK.last) / 1000 : 0.016;
+  FOLK.last = ts;
+
+  FOLK.pos.forEach((st, id) => {
+    if (st.mode === 'walk'){
+      const dx = st.tx - st.x, dy = st.ty - st.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const step = st.speed * dt;
+      if (d <= step || d < 0.35){
+        st.x = st.tx; st.y = st.ty;
+        st.mode = 'work';
+        setFolkMode(id, 'work');
+        st.backAt = ts + 2300 + Math.random() * 1000;
+        if (st.arrive){ const f = st.arrive; st.arrive = null; f(); }
+      } else {
+        st.x += dx / d * step;
+        st.y += dy / d * step;
+      }
+    } else if (st.mode === 'work'){
+      if (ts >= st.backAt){ st.tx = st.hx; st.ty = st.hy; st.mode = 'walk'; setFolkMode(id, 'walk'); }
+    } else {
+      st.phase += dt;
+      st.x = st.hx + Math.sin(st.phase * st.wobble) * st.amp;
+      st.y = st.hy;
+    }
+    paintFolk(id);
+  });
+
+  FOLK.raf = requestAnimationFrame(folkTick);
+}
+
+function startFolks(){
+  if (FOLK.raf) return;
+  FOLK.last = 0;
+  FOLK.raf = requestAnimationFrame(folkTick);
+}
+function stopFolks(){
+  if (FOLK.raf) cancelAnimationFrame(FOLK.raf);
+  FOLK.raf = 0;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopFolks();
+  else if (state && state.pop) startFolks();
+});
 
 /* ---------- 渲染 ---------- */
 
@@ -678,10 +1019,33 @@ function resBar(){
   box.innerHTML = h;
 }
 
+// 场景只在"该变了"的时候重绘。签名没变就不动 —— 打卡时不重绘，
+// 建筑上的烟和风车就不会每次都从 0 开始转。
+let _sceneSig = '';
+
+function renderScene(){
+  if (!ensureTownDOM()) return;
+  const { front, back } = buildingSlots();
+  const sig = [
+    front.map(b => b.icon).join('.'),
+    back.map(b => b.icon).join('.'),
+    skyColors().night ? 1 : 0,
+    popCount()
+  ].join('|');
+
+  document.getElementById('capLabel').textContent = rank().t;
+  document.getElementById('popLabel').textContent = popCount() + ' / ' + cap() + ' 人';
+
+  if (sig === _sceneSig) return;
+  _sceneSig = sig;
+  document.getElementById('scene').innerHTML = sceneBody();
+}
+
 function render(){
   document.getElementById('dayLabel').textContent = '第 ' + state.day + ' 天';
   document.getElementById('verLabel').textContent = popCount() + ' / ' + cap() + ' 人 · ' + APP_VER;
-  document.getElementById('town').innerHTML = townSVG();
+  renderScene();
+  syncFolks();
   resBar();
 
   const m = document.getElementById('main');
@@ -867,7 +1231,9 @@ document.addEventListener('click', e => {
     if (t.need && !state.build[t.need]){ toast('还没有' + BUILD_NAME[t.need]); return; }
     if (state.checks[id]) delete state.checks[id];
     else state.checks[id] = 1;
-    save(); render(); return;
+    save(); render();
+    if (state.checks[id]) dispatchWorker(t);
+    return;
   }
 
   const act = e.target.closest('[data-act]');
@@ -974,10 +1340,14 @@ function doNight(){
   state.lastNight = todayStr();
   state.day += 1;
   state.came = newPeople;
+  pendingGain = produced;
   save();
 
   showNightReport(report, evt);
 }
+
+// 过夜结算了但还没演给人看的那份产出
+let pendingGain = null;
 
 function rnd(){ return Math.random(); }
 
@@ -1076,6 +1446,12 @@ function openModal(html){
 function closeModal(){
   document.getElementById('modal').classList.remove('show');
   render();
+  // 报表关掉之后再演收成 —— 数字刚结算完，这时候冒 +N 是真的
+  if (pendingGain){
+    const g = pendingGain;
+    pendingGain = null;
+    setTimeout(() => playHarvest(g), 380);
+  }
 }
 
 let toastT = null;
@@ -1121,6 +1497,9 @@ if (state.pend){
 } else {
   render();
 }
+
+// 人在动，镇子才是活的
+startFolks();
 </script>
 </body>
 </html>
