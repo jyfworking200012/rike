@@ -111,6 +111,9 @@ main{padding:14px 16px 20px}
 .bcard .bb:disabled{background:#e6ddcc;color:#b0a694}
 .bcard .bb.built{background:#eef4e6;color:#5c7a4a}
 .lv{font-size:10.5px;background:#f0e9db;color:#8a7f6c;border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:1px}
+.aiform label{display:block;font-size:12px;color:#7a705e;margin:10px 0 4px}
+.aiform input{width:100%;box-sizing:border-box;border:1px solid #d8cdb8;border-radius:8px;
+  padding:8px 10px;font-size:13px;background:#fffdf6;color:#4a4235;font-family:inherit}
 .bcard.up{background:#fffef9;border-color:#e9dfc6;box-shadow:inset 3px 0 0 #dcc99c}
 .bcard.up .lv{background:#eee7d2;color:#7a6a48;font-weight:600}
 .bcard.up .bb{background:#5c7a4a}
@@ -282,7 +285,7 @@ main{padding:14px 16px 20px}
    小镇 v4 —— 打卡招人，人撑起镇子
    ========================================================================== */
 
-const APP_VER = 'v4.5';
+const APP_VER = 'v4.6';
 const SAVE = 'town_v4';
 const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 
@@ -340,13 +343,18 @@ const BUILDS = [
     up:[null, {stone:24,iron:10,coin:16}, {stone:44,iron:20,coin:34}],
     upText:['', '事件 −48%', '事件 −55%'] },
   { id:'hall',   name:'村长家', icon:'gate',   cost:{wood:25, stone:15},
-    desc:'纸生在门口挂了块木牌：鸡毛蒜皮，先到我这里评理。', eff:'低危的事，村长直接摆平', repeat:false, need:'well',
+    desc:'纸生在门口挂了块木牌：鸡毛蒜皮，先到我这里评理。', eff:'低危的事，官府直接摆平（tier1 · 30%）', repeat:false, need:'well',
     up:[null, {wood:20,stone:16}, {wood:36,stone:28,coin:12}],
-    upText:['', '摆平 45%', '摆平 60%'] }
+    upText:['', '升镇长家 · 摆平 45%', '升城主府 · 摆平 60%'] }
 ];
 
-// 村长家摆平率。只消化 tier1 且不涉人命/走人的小事 —— 这是"事件多了不烦"的阀门
+// 官府摆平率（按等级）：Lv1 30% / Lv2 45% / Lv3 60%
 const HALL_RATE = [0.30, 0.45, 0.60];
+// 官府名字跟着长：盖起来是村长家，镇大了才配叫镇长家、城主府
+function hallName(){
+  const l = lvOf('hall');
+  return l >= 3 ? '城主府' : l === 2 ? '镇长家' : '村长家';
+}
 
 /* 事件：tier 1 小 / 2 中 / 3 大 */
 const EVENTS = [
@@ -560,6 +568,35 @@ const EVENTS = [
         bad:{ txt:'香灭了三次。有人说，是先人不高兴。那几天没人敢大声说话。', bad:{safe:1} } },
       { lb:'把门锁上', cost:{}, res:'锁上了。夜里再没亮过。' },
       { lb:'不理会', cost:{}, warn:'人心浮动', res:'祠堂的灯连亮了三晚。第四晚，有人开始收拾包袱。', bad:{safe:2} }
+    ]},
+
+  /* ---- v4.6 新增：通用记仇协议（grudge / grudgeOn）的演示件 ----
+     选项带 grudge:'tag' 表示"这笔账记下了"；事件带 grudgeOn:'tag' 表示
+     只有记了这笔账才会出现，出现一次就销账。旧的手写 when 链不动。 */
+
+  { id:'beggar', tier:1, cat:'外', w:0.7, title:'讨饭的母子',
+    text:'镇口来了个讨饭的，背着个半大的孩子，说是往南逃荒去的。',
+    opts:[
+      { lb:'舍两斤肉', cost:{meat:2}, res:'肉给了，孩子吃得很急。妇人临走朝镇子作了个揖。', good:{safe:1} },
+      { lb:'赶他们走', cost:{}, warn:'这笔账会记下', res:'妇人没说什么，牵起孩子走了。风把纸似的衣角吹起来。', grudge:'beggar' }
+    ]},
+  { id:'beggar2', tier:2, cat:'村', w:1.0, grudgeOn:'beggar', title:'夜里的响动',
+    text:'半夜有人撬粮仓的门。看仓的人追出去，地上掉了只破草鞋——鞋底是豁的，和那天孩子脚上的一样。',
+    opts:[
+      { lb:'去破庙把粮追回来', cost:{meat:1}, res:'破庙里找到了娘俩。粮袋子还捆着没打开。妇人只说了一句：娃饿了三天。', good:{safe:1} },
+      { lb:'锁紧门户不再追究', cost:{}, res:'门闩加了一根。那之后，撬门声没再响过，草鞋也没人认领。', bad:{wood:2} }
+    ]},
+  { id:'opera', tier:2, cat:'外', w:0.7, title:'过路的戏班',
+    text:'一个戏班路过，问能不能在晒谷场搭台唱三天，收点肉当谢礼。',
+    opts:[
+      { lb:'搭台', cost:{meat:4}, res:'锣鼓响了三天，邻镇的人都跑来看。散场那天，班主留下两箱戏服作谢。', good:{coin:3, happy:1} },
+      { lb:'请他们去别处', cost:{}, warn:'这笔账会记下', res:'班主抱拳走了。有人说那出《目连救母》，一年就演这一回。', grudge:'opera' }
+    ]},
+  { id:'opera2', tier:3, cat:'外', w:0.9, grudgeOn:'opera', title:'对台戏',
+    text:'那戏班回来了，就在镇口斜对面搭起了台，锣鼓比上次还响。晒谷场冷冷清清，人全被吸了过去。',
+    opts:[
+      { lb:'请个更好的班子', cost:{coin:6}, res:'镇里请的老班子一开嗓，对面就散了场。班主收锣那天没说话。', good:{happy:1} },
+      { lb:'随他们唱', cost:{}, res:'对台唱了五天。集市几天没开张，账房直摇头。', bad:{coin:3} }
     ]}
 ];
 
@@ -594,19 +631,23 @@ function isMinor(evt){
 function pickEvent(){
   const maxTier = popCount() >= 6 ? 3 : popCount() >= 3 ? 2 : 1;
   if (!state.seen) state.seen = [];
+  if (!state.grudges) state.grudges = {};
   const pool = EVENTS.filter(e =>
     e.tier <= maxTier &&
     state.seen.indexOf(e.id) < 0 &&
-    (!e.when || e.when()));
+    (!e.when || e.when()) &&
+    // 记仇协议：只有镇子真的记了这笔账，寻仇的人才会来；来过一回，账就销了
+    (!e.grudgeOn || state.grudges[e.grudgeOn]));
   if (!pool.length) return null;
   let total = 0;
-  for (const e of pool) total += (e.w || 1);
+  for (const e of pool) total += (e.w || 1) * (e.grudgeOn ? 3 : 1);   // 记仇的事来得急、来得准
   let r = rnd() * total;
   let pick = pool[pool.length - 1];
   for (const e of pool){
-    r -= (e.w || 1);
+    r -= (e.w || 1) * (e.grudgeOn ? 3 : 1);
     if (r <= 0){ pick = e; break; }
   }
+  if (pick.grudgeOn) delete state.grudges[pick.grudgeOn];
   state.seen.push(pick.id);
   while (state.seen.length > 4) state.seen.shift();
   return pick;
@@ -681,6 +722,7 @@ function fresh(){
     pop: [],
     build: { hut:0, stonehouse:0, trap:0, granary:0, well:0, forge:0, market:0, tower:0, shrine:0 },
     lv: {},
+    grudges: {},
     safe: 0, happy: 0,
     log: [],
     pend: null,
@@ -1463,7 +1505,7 @@ function viewBuild(){
       h += '<div class="bcard up">' +
         '<div class="ic">' + buildIcon(b.icon) + '</div>' +
         '<div class="bd">' +
-          '<div class="bn">' + b.name + '<span class="lv">Lv' + L + '</span></div>' +
+          '<div class="bn">' + (b.id === 'hall' ? hallName() : b.name) + '<span class="lv">Lv' + L + '</span></div>' +
           '<div class="bx">' + (cost ? '升一级 → ' + b.upText[L] : '已经到顶：' + b.upText[2]) + '</div>' +
           '<div class="bc">' + (cost ? costTxt : '<span style="color:#b8ae9c">封顶</span>') + '</div>' +
         '</div>' +
@@ -1557,10 +1599,127 @@ function viewLog(){
     }
   }
   h += '<div style="margin-top:22px"><button class="btn ghost" data-act="export">导出存档</button></div>';
+  const c = aiCfg();
+  h += '<div style="margin-top:10px"><button class="btn ghost" data-act="ai_set">AI 参谋' +
+    (c.key ? ' · 已请' : '') + '</button></div>';
   h += '<div style="text-align:center;font-size:11.5px;color:#b8ae9c;margin-top:16px;line-height:1.9">' +
     '小镇 ' + APP_VER + ' · 数据只在这台设备<br>每天过一夜，镇子就会长一点<br>' +
     '<span style="font-size:10.5px;color:#c6bdac">建筑与资源图标：game-icons.net（Lorc, Delapouite, Caro Asercion 等）· CC BY 3.0</span></div>';
   return h;
+}
+
+/* ---------- AI 参谋（可选，默认关） ----------
+   语义-数值分离：AI 只写文本、挑意图（kind），数值由白名单代码定 —— AI 碰不到数值。
+   不配置 key 时整块不存在；配置存 localStorage，不进存档。 */
+
+const AI_DEF = { ep: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' };
+
+function aiCfg(){
+  try { return JSON.parse(localStorage.getItem('rike_ai') || 'null') || {}; } catch(e){ return {}; }
+}
+function aiSet(c){
+  if (c && c.key) localStorage.setItem('rike_ai', JSON.stringify(c));
+  else localStorage.removeItem('rike_ai');
+}
+
+// 意图 → 数值白名单。AI 只能在三种意图里挑，钱粮增减全在代码手里
+const AI_KIND = {
+  gain:    { fx: { good: { wood: 2, coin: 1 } } },
+  cost:    { cost: { meat: 3 }, fx: { good: { safe: 1 } }, warn: '要花吃的' },
+  nothing: { fx: {} }
+};
+
+function validateAIEvt(o){
+  if (!o || typeof o !== 'object') return null;
+  const cut = s => String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  const title = cut(o.title).slice(0, 14), text = cut(o.text).slice(0, 90);
+  if (title.length < 2 || text.length < 8 || !Array.isArray(o.opts)) return null;
+  const opts = o.opts.filter(Boolean).slice(0, 2).map(x => ({
+    lb: cut(x && x.lb).slice(0, 10),
+    res: cut(x && x.res).slice(0, 70),
+    kind: AI_KIND[x.kind] ? x.kind : 'nothing'
+  }));
+  if (opts.length !== 2 || opts.some(x => x.lb.length < 2 || x.res.length < 4)) return null;
+  return { title, text, cat: ['外','村','灾'].indexOf(o.cat) >= 0 ? o.cat : '外', opts };
+}
+
+function aiInject(v){
+  const e = {
+    id: 'ai' + state.day, cat: v.cat, w: 0.9, ai: true,
+    tier: popCount() >= 6 ? 3 : popCount() >= 3 ? 2 : 1,
+    title: v.title, text: v.text,
+    opts: v.opts.map(x => {
+      const k = AI_KIND[x.kind];
+      const o = { lb: x.lb, res: x.res };
+      if (k.cost) o.cost = Object.assign({}, k.cost);
+      if (k.warn) o.warn = k.warn;
+      if (k.fx.good) o.good = Object.assign({}, k.fx.good);
+      return o;
+    })
+  };
+  EVENTS.push(e);
+  const ais = EVENTS.filter(x => x.ai);
+  while (ais.length > 3) EVENTS.splice(EVENTS.indexOf(ais.shift()), 1);  // 池里最多 3 件 AI 事
+  return e;
+}
+
+function aiFail(){
+  const c = aiCfg(); c.lastErr = Date.now(); aiSet(c);
+}
+
+const AI_SYS =
+  '你是纸上水墨风格的古镇经营游戏的事件编写者。输出 JSON（不要多余文字）：' +
+  '{"title":"标题","text":"正文","cat":"外|村|灾","opts":[{"lb":"选项名","res":"结果叙述","kind":"gain|cost|nothing"},…]}。' +
+  '要求：明清小镇口吻，无现代词；正文 30-70 字；恰好两个选项，是两种做法而不是对错；' +
+  'res 写这段选择带来的结果，不写任何数字；kind 只能取 gain（有点进项）、cost（要花吃的）、nothing（无得失）。';
+
+async function aiGenerate(){
+  const c = aiCfg();
+  if (!c.key || !state) return;
+  const recent = (state.log || []).slice(-3).map(l => l.t).join('；') || '新镇，还没发生过什么。';
+  const user = '镇子' + state.day + ' 天，' + popCount() + ' 人。' +
+    '近期：' + recent + ' 写一件可能发生在这镇上的事。';
+  try {
+    const res = await fetch(c.ep || AI_DEF.ep, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.key },
+      body: JSON.stringify({
+        model: c.model || AI_DEF.model,
+        messages: [ { role: 'system', content: AI_SYS }, { role: 'user', content: user } ],
+        temperature: 1.1, max_tokens: 500, response_format: { type: 'json_object' }
+      })
+    });
+    const j = await res.json();
+    const raw = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+    const v = validateAIEvt(JSON.parse(raw));
+    if (!v) return aiFail();
+    aiInject(v);
+    state.log.push({ d: state.day, t: '夜里说书人添了一段新故事：《' + v.title + '》' });
+    save();
+    const c2 = aiCfg(); c2.lastOk = Date.now(); delete c2.lastErr; aiSet(c2);
+  } catch(e){ aiFail(); }
+}
+
+function aiModal(){
+  const c = aiCfg();
+  openModal(
+    '<h2>AI 参谋</h2>' +
+    '<div class="sub">可选 · 不配也能玩</div>' +
+    '<p style="font-size:12.5px;line-height:1.8">配好后，过夜时说书人可能添一件新事。' +
+    'AI 只写故事和选项；数字多少、镇子得失，全由镇规说了算。</p>' +
+    '<div class="aiform">' +
+    '<label>接口地址（OpenAI 兼容）<input id="aiEp" value="' + (c.ep || AI_DEF.ep) + '"></label>' +
+    '<label>API Key（只存本机）<input id="aiKey" type="password" value="' + (c.key || '') + '"></label>' +
+    '<label>模型<input id="aiModel" value="' + (c.model || AI_DEF.model) + '"></label>' +
+    '<div style="display:flex;gap:8px;margin-top:12px">' +
+    '<button class="btn" data-act="ai_save">保存</button>' +
+    '<button class="btn ghost" data-act="ai_gen">试写一件</button>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#b0a694;margin-top:8px">' +
+    (c.lastErr ? '上次没写成（接口或 Key 有误）。' : c.lastOk ? '上次写成了一件。' : '还没试过。') +
+    '</div></div>' +
+    '<div style="margin-top:14px"><button class="btn ghost" data-act="close">合上</button></div>'
+  );
 }
 
 /* ---------- 交互 ---------- */
@@ -1601,6 +1760,30 @@ document.addEventListener('click', e => {
     const a = act.dataset.act;
     if (a === 'night') return doNight();
     if (a === 'export') return doExport();
+    if (a === 'ai_set') return aiModal();
+    if (a === 'ai_save'){
+      const c = {
+        ep: document.getElementById('aiEp').value.trim(),
+        key: document.getElementById('aiKey').value.trim(),
+        model: document.getElementById('aiModel').value.trim()
+      };
+      aiSet(c);
+      toast(c.key ? '参谋请来了。' : '参谋送走了。');
+      return aiModal();
+    }
+    if (a === 'ai_gen'){
+      const c = {
+        ep: document.getElementById('aiEp').value.trim(),
+        key: document.getElementById('aiKey').value.trim(),
+        model: document.getElementById('aiModel').value.trim()
+      };
+      if (!c.key){ toast('先填 Key。'); return; }
+      aiSet(c);
+      closeModal();
+      toast('说书人正在打腹稿……');
+      aiGenerate();
+      return;
+    }
     if (a === 'nextday') return closeModal();
     if (a === 'close') return closeModal();
     return;
@@ -1616,13 +1799,14 @@ document.addEventListener('click', e => {
     pay(cost);
     if (!state.lv) state.lv = {};
     state.lv[def.id] = L + 1;
-    state.log.push({ d: state.day, t: def.name + ' 升到 Lv' + (L + 1) + '，' + def.upText[L] + '。' });
+    const nm = def.id === 'hall' ? hallName() : def.name + ' · Lv' + (L + 1);
+    state.log.push({ d: state.day, t: nm + (def.id === 'hall' ? '挂牌了，' + def.upText[L] + '。' : ' 升到 Lv' + (L + 1) + '，' + def.upText[L] + '。') });
     save();
-    toast(def.name + ' · Lv' + (L + 1) + ' — ' + def.upText[L]);
+    toast(nm + ' — ' + def.upText[L]);
     render();
     // 升级完飘一句在房子头上：新长出来的东西是这一天的高光
     const sp = spotOf(def.icon);
-    if (sp) floatText(sp.x, sp.y - 24, def.name + ' Lv' + (L + 1), '#5c7a4a');
+    if (sp) floatText(sp.x, sp.y - 24, nm, '#5c7a4a');
     return;
   }
 
@@ -1719,10 +1903,12 @@ function doNight(){
     }
   }
 
-  // 4) 事件：先按概率掷是否出事，再抽哪件，再问村长 —— 他只摆平不涉人命的小事，不弹窗
+  // 4) 事件：先按概率掷是否出事，再抽哪件，再问官府 —— 只摆平不涉人命/走人的小事。
+  //    等级越高，能管的事越大：村长家管 tier1，镇长家 tier2，城主府 tier3 也敢接
   let evt = rnd() < eventRate() ? pickEvent() : null;
-  if (evt && state.build.hall && isMinor(evt) && rnd() < HALL_RATE[lvAdd('hall')]){
-    report.push({ k: '村长家', v: evt.title + ' · 摆平了' });
+  const hl = state.build.hall ? lvOf('hall') : 0;
+  if (evt && hl && isMinor(evt) && evt.tier <= hl && rnd() < HALL_RATE[Math.min(hl, 3) - 1]){
+    report.push({ k: hallName(), v: evt.title + ' · 摆平了' });
     evt = null;
   }
 
@@ -1732,6 +1918,8 @@ function doNight(){
   state.came = newPeople;
   pendingGain = produced;
   save();
+
+  if (aiCfg().key) aiGenerate();   // 过夜后请参谋打底稿，不阻塞报表
 
   showNightReport(report, evt);
 }
@@ -1816,6 +2004,10 @@ function applyOpt(i){
   const txt = (seg && seg.txt) || o.res;
 
   applyFx(eff.good, eff.bad);
+  if (o.grudge){
+    if (!state.grudges) state.grudges = {};
+    state.grudges[o.grudge] = state.day;   // 这笔账，镇子记下了
+  }
 
   if (!state.hist) state.hist = {};
   state.hist[evt.id] = i;   // 记仇与事件链都从这里读：你做过什么选择，镇子记得
