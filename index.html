@@ -3,946 +3,1077 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#f6f1e5">
+<meta name="theme-color" content="#f4efe3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="日课">
+<meta name="apple-mobile-web-app-title" content="夜行">
 <meta name="format-detection" content="telephone=no">
-<title>日课 · 一亩三分地</title>
+<title>夜行</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6f1e5'/%3E%3Cpath d='M10 46h44M18 46V30l14-9 14 9v16' fill='none' stroke='%232b2b28' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='36' r='4' fill='%23b8822c'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231a1d26'/%3E%3Ccircle cx='32' cy='26' r='9' fill='none' stroke='%23d9a441' stroke-width='3'/%3E%3Cpath d='M32 35v12M24 54h16' stroke='%23d9a441' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/lxgwwenkaiscreen.css">
 <style>
+/* ══════════════ 主题：白天纸色 / 夜里墨色 ══════════════ */
 :root{
-  --paper:#f6f1e5; --paper2:#efe7d6; --paper3:#e6dbc6;
-  --ink:#2b2b28; --ink2:#5c574d; --ink3:#8c8578;
-  --line:#d8cdb6; --line2:#c7b99d;
-  --amber:#b8822c; --amber-l:#d8a94f;
-  --moss:#6f8560; --clay:#b3795c;
+  --bg:#f4efe3; --bg2:#ece4d3; --card:#fffdf7; --card2:#f7f2e6;
+  --ink:#2a2925; --ink2:#57534a; --ink3:#8b8478;
+  --line:#d9cfb9; --line2:#c8ba9d;
+  --acc:#a8762a; --acc2:#c99a45; --ok:#5f7a4e; --bad:#a8543c;
+  --glow:rgba(201,154,69,.18);
+  --chrome:rgba(244,239,227,.94);
   --r:14px;
+  --ease:cubic-bezier(.22,.9,.3,1);
+}
+body.night{
+  --bg:#141620; --bg2:#1b1e2b; --card:#1f2330; --card2:#252a3a;
+  --ink:#e6e0d2; --ink2:#b6b0a2; --ink3:#7b776d;
+  --line:#2f3444; --line2:#3d4356;
+  --acc:#d9a441; --acc2:#e8bd6c; --ok:#8fa87a; --bad:#c47a5e;
+  --glow:rgba(217,164,65,.14);
+  --chrome:rgba(20,22,32,.95);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;background:var(--paper);color:var(--ink)}
+html,body{margin:0;padding:0}
 body{
+  background:var(--bg); color:var(--ink);
   font-family:"LXGW WenKai Screen","Songti SC","PingFang SC",system-ui,-apple-system,"Noto Sans SC",sans-serif;
-  font-size:16px; line-height:1.6;
+  font-size:16px; line-height:1.65;
   overflow-x:hidden; max-width:100vw;
   -webkit-font-smoothing:antialiased;
   overscroll-behavior-y:none;
+  transition:background .7s var(--ease), color .7s var(--ease);
 }
-#app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+#app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
 
-/* ---------- header ---------- */
+/* ══════════════ 顶栏 ══════════════ */
 header{
   position:sticky;top:0;z-index:30;
-  padding:calc(8px + env(safe-area-inset-top)) 16px 9px;
-  background:rgba(246,241,229,.94);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:calc(9px + env(safe-area-inset-top)) 16px 10px;
+  background:var(--chrome);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line);
   display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+  transition:background .7s var(--ease), border-color .7s var(--ease);
 }
-.hd-l .t{font-size:18px;font-weight:700;letter-spacing:.06em;line-height:1.2}
-.hd-l .s{font-size:12px;color:var(--ink3);margin-top:1px;letter-spacing:.03em}
-.hd-r{text-align:right;flex-shrink:0}
-.hd-r .n{font-size:22px;font-weight:700;color:var(--amber);line-height:1;font-variant-numeric:tabular-nums}
-.hd-r .n i{font-style:normal;font-size:13px;color:var(--ink3);font-weight:400}
-.hd-r .d{font-size:11px;color:var(--ink3);margin-top:3px;letter-spacing:.04em}
+.hd-t{font-size:17px;font-weight:700;letter-spacing:.14em;line-height:1.2}
+.hd-s{font-size:11.5px;color:var(--ink3);margin-top:2px;letter-spacing:.04em}
+.hd-v{text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.hd-v .n{font-size:21px;font-weight:700;color:var(--acc);line-height:1}
+.hd-v .k{font-size:10.5px;color:var(--ink3);letter-spacing:.1em;margin-top:3px}
 
-/* ---------- yard ---------- */
-#yard{position:relative;background:var(--paper2);overflow:hidden}
-#yard svg{display:block;width:100%;height:auto}
-#yard .cap{
-  position:absolute;left:0;right:0;bottom:0;
-  padding:26px 16px 9px;
-  background:linear-gradient(to top,rgba(246,241,229,.96),rgba(246,241,229,.6),transparent);
-  font-size:12.5px;color:var(--ink2);letter-spacing:.03em;
-  display:flex;justify-content:space-between;align-items:center;gap:8px;
-}
-#yard .cap b{color:var(--amber);font-weight:600}
-
-/* ---------- task cards ---------- */
+/* ══════════════ 通用 ══════════════ */
 .sec{padding:0 14px}
-.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:16px 2px 9px}
-.sec-h .x{font-size:13.5px;font-weight:700;letter-spacing:.08em;color:var(--ink2)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:18px 2px 9px}
+.sec-h .x{font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--ink2)}
 .sec-h .y{font-size:11.5px;color:var(--ink3)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);transition:background .5s,border-color .5s}
+.note{font-size:12.5px;color:var(--ink3);line-height:1.7}
 
+/* ══════════════ 打卡卡 ══════════════ */
 .tk{
   display:flex;align-items:center;gap:11px;
   padding:12px 13px;margin-bottom:8px;
-  background:#fffdf7;border:1px solid var(--line);border-radius:var(--r);
-  cursor:pointer;transition:transform .12s,border-color .2s,background .2s;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  cursor:pointer;transition:transform .12s,border-color .25s,background .25s;
   position:relative;overflow:hidden;
 }
 .tk:active{transform:scale(.985)}
 .tk .gl{
-  width:34px;height:34px;flex-shrink:0;
+  width:33px;height:33px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   border:1px solid var(--line2);border-radius:10px;
-  background:var(--paper);color:var(--ink2);
-  transition:all .25s;
+  background:var(--bg2);color:var(--ink2);transition:all .3s;
 }
-.tk .gl svg{width:18px;height:18px}
+.tk .gl svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .tk .bd{flex:1;min-width:0}
-.tk .nm{font-size:14.5px;font-weight:600;letter-spacing:.02em;line-height:1.35}
-.tk .ds{font-size:11.5px;color:var(--ink3);margin-top:1px;line-height:1.4;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tk .st{font-size:11px;color:var(--ink3);flex-shrink:0;letter-spacing:.02em}
-.tk.on{background:#f2f6ec;border-color:#b9c9a8}
-.tk.on .gl{background:var(--moss);border-color:var(--moss);color:#fff}
-.tk.on .st{color:var(--moss);font-weight:600}
-.tk.on .nm{color:var(--ink2)}
+.tk .nm{font-size:14.5px;font-weight:600;line-height:1.35}
+.tk .ds{font-size:11.5px;color:var(--ink3);margin-top:1px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk .eff{font-size:11px;color:var(--acc);flex-shrink:0;font-weight:600;letter-spacing:.02em}
+.tk.on{background:var(--card2);border-color:var(--line2)}
+.tk.on .gl{background:var(--ok);border-color:var(--ok);color:#fff}
+.tk.on .ds{color:var(--ink2)}
 .tk.pop{animation:pop .45s cubic-bezier(.2,.9,.3,1.3)}
-@keyframes pop{0%{transform:scale(1)}38%{transform:scale(1.035)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(1)}38%{transform:scale(1.03)}100%{transform:scale(1)}}
 
-/* ---------- today bar ---------- */
-.goalbar{
-  margin:8px 14px 4px;padding:11px 13px;
-  border:1px dashed var(--line2);border-radius:var(--r);
-  background:rgba(255,253,247,.6);
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  font-size:12.5px;color:var(--ink2);
+/* ══════════════ 筹码条 ══════════════ */
+.chips{display:flex;gap:8px;padding:0 14px;margin:12px 0 4px}
+.chip{
+  flex:1;text-align:center;padding:10px 4px 9px;
+  background:var(--card);border:1px solid var(--line);border-radius:11px;
+  transition:background .5s,border-color .5s;
 }
-.goalbar .pips{display:flex;gap:5px;align-items:center}
-.goalbar .pip{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line2);background:transparent}
-.goalbar .pip.f{background:var(--amber);border-color:var(--amber)}
-.goalbar .txt b{color:var(--amber);font-weight:700}
-.goalbar.met{border-style:solid;border-color:#c9b98c;background:#fbf5e4}
+.chip .v{font-size:19px;font-weight:700;color:var(--acc);line-height:1.1;font-variant-numeric:tabular-nums}
+.chip .k{font-size:10.5px;color:var(--ink3);margin-top:3px;letter-spacing:.06em}
 
-/* ---------- tabs ---------- */
+/* ══════════════ 按钮 ══════════════ */
+.btn{
+  display:block;width:100%;padding:14px;border-radius:13px;
+  border:1px solid var(--line2);background:var(--card);color:var(--ink);
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.06em;
+  cursor:pointer;transition:transform .12s,background .25s,border-color .25s;
+}
+.btn:active{transform:scale(.985)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+body.night .btn.primary{background:var(--acc);color:#1a1d26;border-color:var(--acc)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.42;cursor:default}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+
+/* ══════════════ 入夜 ══════════════ */
+.nightwrap{padding:0 16px}
+.scene{
+  min-height:22vh;padding:22px 2px 16px;
+  font-size:17px;line-height:1.95;letter-spacing:.02em;color:var(--ink);
+  animation:fade .7s var(--ease);
+}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.scene p{margin:0 0 15px}
+.scene .dim{color:var(--ink3);font-size:14px}
+
+.opt{
+  display:block;width:100%;text-align:left;
+  padding:13px 14px;margin-bottom:9px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  color:var(--ink);font-family:inherit;font-size:14.5px;line-height:1.5;
+  cursor:pointer;transition:transform .12s,border-color .2s,background .2s;
+  position:relative;
+}
+.opt:active{transform:scale(.99)}
+.opt .lb{display:block;font-weight:600}
+.opt .cost{display:block;font-size:11.5px;color:var(--ink3);margin-top:3px;letter-spacing:.02em}
+.opt .cost b{color:var(--acc);font-weight:600}
+.opt:disabled{opacity:.38}
+
+/* 顶部状态条 */
+.bar{
+  display:flex;gap:6px;padding:9px 16px;
+  border-bottom:1px solid var(--line);
+  background:var(--chrome);
+  position:sticky;top:0;z-index:20;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.bar i{
+  font-style:normal;font-size:11.5px;color:var(--ink2);
+  padding:3px 9px;border-radius:20px;background:var(--bg2);
+  font-variant-numeric:tabular-nums;letter-spacing:.02em;
+}
+.bar i b{color:var(--acc);font-weight:700}
+
+/* ══════════════ 城市地图 ══════════════ */
+.mapwrap{padding:6px 14px 0}
+.citygrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:4px}
+.blk{
+  position:relative;padding:13px 12px;border-radius:12px;
+  background:var(--card);border:1px solid var(--line);
+  transition:all .35s;overflow:hidden;
+}
+.blk.unk{opacity:.4;border-style:dashed}
+.blk .nm{font-size:13.5px;font-weight:600;line-height:1.3}
+.blk .mt{font-size:10.5px;color:var(--ink3);margin-top:4px;display:flex;gap:7px;flex-wrap:wrap}
+.blk .mt span{font-variant-numeric:tabular-nums}
+.blk .dots{display:flex;gap:3px;margin-top:8px}
+.blk .dot{width:100%;height:4px;border-radius:2px;background:var(--line)}
+.blk .dot.f{background:var(--acc)}
+.blk .dot.h{background:var(--acc2);opacity:.55}
+.blk.lit3{box-shadow:0 0 0 1px var(--acc2), 0 0 18px -4px var(--glow)}
+
+/* ══════════════ 弹层 ══════════════ */
+#sheet{
+  position:fixed;inset:0;z-index:80;display:none;
+  align-items:flex-end;justify-content:center;
+  background:rgba(20,18,16,.45);
+  backdrop-filter:blur(2px);
+}
+#sheet.on{display:flex}
+#sheet-in{
+  width:100%;max-width:560px;max-height:88vh;overflow-y:auto;
+  background:var(--bg);border-radius:20px 20px 0 0;
+  padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+  animation:up .34s var(--ease);
+  border-top:1px solid var(--line2);
+}
+@keyframes up{from{transform:translateY(34px);opacity:0}to{transform:none;opacity:1}}
+#sheet h3{margin:0 0 10px;font-size:17px;font-weight:700;letter-spacing:.06em}
+#sheet .body{font-size:14.5px;line-height:1.8;color:var(--ink2);margin-bottom:16px}
+#sheet .body b{color:var(--acc)}
+
+/* ══════════════ 底部导航 ══════════════ */
 #tabs{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
   display:flex;
-  background:rgba(246,241,229,.97);
+  background:var(--chrome);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom);
+  transition:background .7s,border-color .7s;
 }
-#tabs .tb{
-  flex:1;border:0;background:transparent;font-family:inherit;
-  padding:9px 4px 8px;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  color:var(--ink3);font-size:10.5px;letter-spacing:.06em;
+#tabs button{
+  flex:1;border:0;background:none;padding:9px 2px 8px;
+  font-family:inherit;font-size:10.5px;letter-spacing:.1em;
+  color:var(--ink3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
   transition:color .2s;
 }
-#tabs .tb svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-#tabs .tb.on{color:var(--amber)}
-#tabs .tb.on svg{stroke-width:2}
-main{padding-bottom:calc(72px + env(safe-area-inset-bottom));flex:1}
+#tabs button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+#tabs button.on{color:var(--acc);font-weight:700}
 
-/* ---------- generic ---------- */
-.note{
-  font-size:12px;color:var(--ink3);line-height:1.75;
-  padding:12px 14px;background:var(--paper2);border-radius:var(--r);
-  margin:10px 14px 10px;
+/* ══════════════ 建造 ══════════════ */
+.bd-row{
+  display:flex;align-items:center;gap:12px;
+  padding:13px;margin-bottom:9px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
 }
-.note b{color:var(--ink2)}
-.btn{
-  display:block;width:100%;padding:13px;border-radius:var(--r);
-  border:1px solid var(--ink);background:var(--ink);color:var(--paper);
-  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.06em;
-  cursor:pointer;
+.bd-row .ic{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line2);border-radius:9px;color:var(--acc)}
+.bd-row .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.bd-row .bd{flex:1;min-width:0}
+.bd-row .nm{font-size:14px;font-weight:600}
+.bd-row .ds{font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.45}
+.bd-row .lv{display:flex;gap:3px;margin-top:6px}
+.bd-row .lv i{width:14px;height:3px;border-radius:2px;background:var(--line)}
+.bd-row .lv i.f{background:var(--acc)}
+.bd-row button{
+  flex-shrink:0;padding:7px 11px;border-radius:9px;border:1px solid var(--line2);
+  background:transparent;color:var(--ink);font-family:inherit;font-size:12px;
+  cursor:pointer;transition:all .2s;
 }
-.btn:active{opacity:.85}
-.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line2)}
+.bd-row button:disabled{opacity:.35}
+.bd-row button.can{border-color:var(--acc);color:var(--acc)}
 
-/* ---------- sheet ---------- */
-#sheet{
-  position:fixed;inset:0;z-index:80;display:none;
-  background:rgba(43,43,40,.34);
-  backdrop-filter:blur(2px);
-}
-#sheet.on{display:flex;align-items:flex-end;justify-content:center}
-#sheet .inner{
-  width:100%;max-width:560px;
-  background:var(--paper);
-  border-radius:20px 20px 0 0;
-  padding:20px 18px calc(22px + env(safe-area-inset-bottom));
-  animation:up .28s cubic-bezier(.2,.8,.2,1);
-  max-height:86vh;overflow-y:auto;
-}
-@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
-#sheet .h{font-size:19px;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
-#sheet .sub{font-size:13px;color:var(--ink3);margin-bottom:12px;line-height:1.65}
-
-/* ---------- toast ---------- */
+/* ══════════════ toast ══════════════ */
 #toast{
   position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));
-  transform:translateX(-50%) translateY(8px);z-index:95;
-  background:var(--ink);color:var(--paper);
-  font-size:13px;padding:9px 16px;border-radius:20px;
-  opacity:0;transition:all .25s;pointer-events:none;
-  max-width:86%;text-align:center;letter-spacing:.02em;
+  transform:translate(-50%,12px);z-index:90;
+  background:var(--ink);color:var(--bg);
+  padding:9px 17px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:all .28s var(--ease);
+  max-width:82vw;text-align:center;line-height:1.45;
 }
-#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ---------- expedition ---------- */
-.scene{
-  background:#fffdf7;border:1px solid var(--line);border-radius:var(--r);
-  padding:16px 15px;margin-bottom:10px;
+.mat-inv{display:flex;gap:8px;padding:0 14px;margin:10px 0 2px;flex-wrap:wrap}
+.mat-inv div{
+  flex:1;min-width:66px;text-align:center;padding:9px 3px;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
 }
-.scene .stag{font-size:11px;letter-spacing:.14em;color:var(--ink3);margin-bottom:7px}
-.scene .stt{font-size:16.5px;font-weight:700;letter-spacing:.03em;margin-bottom:8px}
-.scene .stx{font-size:14.5px;line-height:1.95;color:var(--ink2)}
-.opt{
-  display:block;width:100%;text-align:left;
-  padding:12px 13px;margin-top:9px;
-  border:1px solid var(--line2);border-radius:12px;
-  background:var(--paper);color:var(--ink);
-  font-family:inherit;font-size:14px;line-height:1.6;cursor:pointer;
-  transition:all .18s;
-}
-.opt:active{transform:scale(.99)}
-.opt .cost{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px}
-.opt.good{border-color:#a9bd97;background:#f3f7ee}
-.opt.risky{border-color:#d3ab6a;background:#fdf6e7}
-.opt:disabled{opacity:.42;cursor:default}
+.mat-inv .v{font-size:16px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
+.mat-inv .k{font-size:10.5px;color:var(--ink3);margin-top:2px;letter-spacing:.06em}
 
-.supply{
-  display:flex;align-items:center;gap:9px;margin-bottom:12px;
-  padding:10px 13px;background:var(--paper2);border-radius:var(--r);
-  font-size:12.5px;color:var(--ink2);
+.notes-item{
+  font-size:13px;line-height:1.75;color:var(--ink2);
+  padding:11px 13px;margin-bottom:8px;border-left:2px solid var(--line2);
+  background:var(--card);border-radius:0 10px 10px 0;
 }
-.supply .v{font-size:19px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums}
-.sp-bar{flex:1;height:6px;background:var(--paper3);border-radius:9px;overflow:hidden}
-.sp-bar i{display:block;height:100%;background:linear-gradient(90deg,#c9a24a,var(--amber));border-radius:9px;transition:width .4s}
-
-/* ---------- settings ---------- */
-.set-row{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:13px 14px;background:#fffdf7;border:1px solid var(--line);
-  border-radius:var(--r);margin-bottom:8px;font-size:14px;
-}
-.set-row .lb{flex:1;min-width:0}
-.set-row .lb .t2{font-weight:600}
-.set-row .lb .d2{font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.5}
-.sw{width:46px;height:27px;border-radius:20px;background:var(--line2);position:relative;
-  flex-shrink:0;cursor:pointer;transition:background .22s;border:0;padding:0}
-.sw i{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
-  background:#fff;transition:transform .22s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.sw.on{background:var(--moss)}
-.sw.on i{transform:translateX(19px)}
-
-textarea{
-  width:100%;min-height:130px;padding:11px;border-radius:12px;
-  border:1px solid var(--line2);background:#fffdf7;color:var(--ink);
-  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
-  line-height:1.6;resize:vertical;
-}
-.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 14px 12px}
-.stat{background:#fffdf7;border:1px solid var(--line);border-radius:12px;padding:11px 9px;text-align:center}
-.stat .v{font-size:21px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;line-height:1.15}
-.stat .k{font-size:11px;color:var(--ink3);margin-top:2px;letter-spacing:.04em}
-
-.relic{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;background:#fffdf7;
-  border:1px solid var(--line);border-radius:12px;margin-bottom:7px}
-.relic .ic{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  background:var(--paper2);border-radius:9px;color:var(--amber);font-size:13px}
-.relic .tx{font-size:13px;line-height:1.55}
-.relic .tx b{display:block;font-size:14px;margin-bottom:1px}
-.relic .tx span{color:var(--ink3);font-size:11.5px}
-
-.empty{text-align:center;padding:26px 20px;color:var(--ink3);font-size:13px;line-height:1.8}
-@media(max-width:360px){
-  .hd-l .t{font-size:16.5px}
-  .tk{padding:11px 11px;gap:9px}
-  .tk .nm{font-size:14px}
-}
+.notes-item .who{font-size:11px;color:var(--ink3);letter-spacing:.06em;margin-bottom:3px}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="hd-l">
-      <div class="t">一亩三分地</div>
-      <div class="s" id="hd-sub">第 1 天</div>
+    <div>
+      <div class="hd-t" id="hd-t">夜行</div>
+      <div class="hd-s" id="hd-s">天亮着</div>
     </div>
-    <div class="hd-r">
-      <div class="n" id="hd-num">0<i>/3</i></div>
-      <div class="d" id="hd-date"></div>
+    <div class="hd-v">
+      <div class="n" id="hd-n">2</div>
+      <div class="k" id="hd-k">滴灯油</div>
     </div>
   </header>
-  <main>
-    <div id="v-yard"></div>
-    <div id="v-exp"></div>
-    <div id="v-set"></div>
-  </main>
-  <nav id="tabs">
-    <button class="tb on" data-act="tab" data-t="yard">
-      <svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V10l6-4 6 4v10"/><circle cx="12" cy="14" r="1.6"/></svg>
-      <span>院子</span>
-    </button>
-    <button class="tb" data-act="tab" data-t="exp">
-      <svg viewBox="0 0 24 24"><path d="M3 18c3-1 4-6 9-6s6 5 9 6M12 12V4M9 7l3-3 3 3"/></svg>
-      <span>远行</span>
-    </button>
-    <button class="tb" data-act="tab" data-t="set">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
-      <span>其他</span>
-    </button>
-  </nav>
+
+  <main id="main"></main>
 </div>
-<div id="sheet"><div class="inner" id="sheet-in"></div></div>
+
+<nav id="tabs">
+  <button data-tab="day" class="on">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+    <span>白天</span>
+  </button>
+  <button data-tab="city">
+    <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l5-3 5 3v13M15 21V12l4-2v11"/><path d="M8 12h1M8 16h1M12 12h1M12 16h1"/></svg>
+    <span>城市</span>
+  </button>
+  <button data-tab="home">
+    <svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 21v-7h6v7"/></svg>
+    <span>安全屋</span>
+  </button>
+  <button data-tab="notes">
+    <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 9h7M8 13h7M8 17h4"/></svg>
+    <span>笔记</span>
+  </button>
+</nav>
+
+<div id="sheet"><div id="sheet-in"></div></div>
 <div id="toast"></div>
 
 <script>
-/* ==================================================================
-   《日课 · 一亩三分地》v2
-   范式：不是「打卡赚代币去玩」，而是「打卡就是在种自己的院子」。
-   - 院子永久累积，任何情况下不清零
-   - 每日任选 3 件即算达成（门槛低于实际基线）
-   - 无惩罚：断一天只影响连击，院子一块砖都不少
-   ================================================================== */
+"use strict";
+/* ═══════════════════════════════════════════════════════════
+   夜行 v3 —— 设计文档见 docs/GDD-v3.md
+   核心：打卡 → 今晚的灯油/胆/线索 → 入夜 → 节点选择 → 带回材料 → 建造
+   ═══════════════════════════════════════════════════════════ */
 
-const SAVE_KEY  = 'rike_save_v1';    // 旧档（v1）兼容读取
-const SAVE_KEY2 = 'rike_yard_v2';    // 新档
-const APP_VER = 'v2.1';              // 每次发版改这里，和 sw.js 的 CACHE 一起 bump
-const GOAL = 3;                       // 每日达成门槛
+const SAVE = 'rike_night_v3';
+const APP_VER = 'v3.0';
 
-/* ---------------------- 七件事 → 院子里的七样东西 ---------------------- */
+/* ───────── 七件事 → 筹码 ───────── */
 const TASKS = [
-  { id:'wake',  name:'按时起床', act:'在门前多垒一级石阶', icon:'sun',
-    hint:'起身，出门，脚踩上第一级台阶' },
-  { id:'train', name:'出去锻炼', act:'院角那棵树长高一寸', icon:'tree',
-    hint:'动过之后，树会记住' },
-  { id:'shower',name:'洗个澡',   act:'井里的水涨了一寸',   icon:'well',
-    hint:'洗干净，井水会满起来' },
-  { id:'study', name:'学点东西', act:'书房窗内多一本书',   icon:'book',
-    hint:'读过的东西会堆在窗台' },
-  { id:'quit',  name:'戒断打卡', act:'院墙添一块新砖',     icon:'wall',
-    hint:'每一次忍住，墙就厚一点' },
-  { id:'read',  name:'看闲书',   act:'廊下再添一本',       icon:'lantern',
-    hint:'不为用处读书，廊下便有书' },
-  { id:'sleep', name:'准点睡觉', act:'屋顶补好一片瓦',     icon:'moon',
-    hint:'睡下，屋子才修得好' }
+  { id:'wake',   name:'早起',   desc:'不是被闹钟叫醒', eff:'灯油 +1', icon:'sun' },
+  { id:'train',  name:'锻炼',   desc:'动到出汗',       eff:'胆 +2',   icon:'run' },
+  { id:'shower', name:'洗澡',   desc:'洗干净',         eff:'隐蔽 +1',  icon:'drop' },
+  { id:'study',  name:'学习',   desc:'啃一点难的东西', eff:'线索 +1', icon:'book' },
+  { id:'quit',   name:'戒断',   desc:'今天没碰',       eff:'胆 +1',   icon:'ban' },
+  { id:'read',   name:'阅读',   desc:'读进去',         eff:'线索 +2', icon:'read' },
+  { id:'sleep',  name:'早睡',   desc:'今晚少走一步',   eff:'明天 +2', icon:'moon' }
 ];
-
 const ICONS = {
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
-  tree:'<path d="M12 21v-6"/><path d="M12 15c-3.2 0-5-1.9-5-4.4C7 8 9 6 12 6s5 2 5 4.6c0 2.5-1.8 4.4-5 4.4z"/>',
-  well:'<path d="M5 10h14M6 10l1 10h10l1-10"/><path d="M9 14c1.5.9 4.5.9 6 0"/>',
-  book:'<path d="M4 5.5C6 4 9 4 12 5.5 15 4 18 4 20 5.5V19c-2-1.5-5-1.5-8 0-3-1.5-6-1.5-8 0z"/><path d="M12 5.5V19"/>',
-  wall:'<path d="M3 8h18M3 14h18M3 20h18"/><path d="M7 8v6M15 8v6M11 14v6M19 14v6"/>',
-  lantern:'<path d="M12 3v3"/><rect x="8" y="6" width="8" height="11" rx="3"/><path d="M10 20h4"/>',
-  moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
+  run:'<circle cx="15" cy="4.5" r="1.8"/><path d="M13.5 8l-3 3 2 3-3.5 5M13.5 8l3 2 2.5-.5M12.5 14h4"/>',
+  drop:'<path d="M12 3s5 5.2 5 9a5 5 0 01-10 0c0-3.8 5-9 5-9z"/>',
+  book:'<path d="M4 5a2 2 0 012-2h12v18H6a2 2 0 01-2-2z"/><path d="M4 17h14"/>',
+  ban:'<circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/>',
+  read:'<path d="M3 6h7v14H3zM14 6h7v14h-7z"/><path d="M6 10h1M17 10h1"/>',
+  moon:'<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>',
+  lamp:'<path d="M9 3h6l2 6H7zM12 9v9M9 21h6"/>',
+  map:'<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',
+  shelf:'<path d="M4 4h16v16H4z"/><path d="M4 10h16M4 15h16M9 4v6M15 10v5"/>',
+  sand:'<path d="M5 20V9l7-5 7 5v11z"/><path d="M9 20v-6h6v6"/>',
+  gram:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>'
 };
 
-/* ---------------------- 日期工具（一律本地时区，不用 toISOString） ---------------------- */
-function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+/* ───────── 城市：12 个街区 ───────── */
+/* unlock: 需要已点亮的前置街区 id；dist: 从家出发的步数成本 */
+const BLOCKS = [
+  { id:'home',  name:'你家楼下',   dist:0, res:'wood',  danger:0, unlock:null,     desc:'一盏坏掉的声控灯。' },
+  { id:'shop',  name:'便利店',     dist:1, res:'paper', danger:0, unlock:'home',   desc:'卷帘门半拉着，里面还有冷气。' },
+  { id:'b3',    name:'三号楼',     dist:1, res:'cloth', danger:1, unlock:'home',   desc:'灯总是亮着，但没人承认住这。' },
+  { id:'shed',  name:'旧车棚',     dist:1, res:'metal', danger:1, unlock:'home',   desc:'铁皮上全是锈，风一大就响。' },
+  { id:'cross', name:'十字路口',   dist:1, res:'paper', danger:1, unlock:'shop',   desc:'四个方向都通向更暗的地方。' },
+  { id:'under', name:'桥洞',       dist:2, res:'cloth', danger:2, unlock:'b3',     desc:'水声比车声大。有人在这住过。' },
+  { id:'yard',  name:'废品站',     dist:2, res:'metal', danger:1, unlock:'shed',   desc:'东西堆得比人高，标价牌还在。' },
+  { id:'post',  name:'老邮局',     dist:2, res:'paper', danger:1, unlock:'cross',  desc:'信箱都是开的，里面塞满了。' },
+  { id:'bank',  name:'河堤',       dist:2, res:'wood',  danger:2, unlock:'under',  desc:'护栏断了一截，往下是黑的。' },
+  { id:'sub',   name:'地铁口',     dist:3, res:'metal', danger:2, unlock:'post',   desc:'扶梯还在转，但没有人上去。' },
+  { id:'shell', name:'烂尾楼',     dist:3, res:'cloth', danger:3, unlock:'bank',   desc:'二十三层的骨架，电梯井没有门。' },
+  { id:'edge',  name:'城市边缘',   dist:3, res:'metal', danger:3, unlock:'shell',  desc:'再往前，路灯就不管了。' }
+];
+const MATS = {
+  wood:  { name:'木', icon:'▤' },
+  cloth: { name:'布', icon:'▧' },
+  paper: { name:'纸', icon:'▨' },
+  metal: { name:'铁', icon:'▩' }
+};
+
+/* ───────── 建筑 ───────── */
+const BUILDS = [
+  { id:'shelf', name:'书架',   icon:'shelf', costs:[3,8,20],  costMat:'wood',
+    desc:['每晚开局线索 +1','每晚开局线索 +2','每晚开局线索 +3'] },
+  { id:'sand',  name:'沙袋',   icon:'sand',  costs:[4,10,24], costMat:'cloth',
+    desc:['被困时保留 70% 材料','保留 85%','保留 100%'] },
+  { id:'wall',  name:'地图墙', icon:'map',   costs:[5,12,28], costMat:'paper',
+    desc:['入夜前看到第一个节点','看到前两个','看到整晚路线'] },
+  { id:'gram',  name:'留声机', icon:'gram',  costs:[6,14,32], costMat:'metal',
+    desc:['下一代继承 1 线索','继承 2 线索','继承 3 线索'] }
+];
+
+/* ───────── 节点库：按街区气质分组 ─────────
+   opt: { lb 标签, cost{oil,nerve,clue}, gain{mat:n}, need 需求, res 结算文本, lit 额外亮度 }
+*/
+const NODES = {
+  home: [
+    { t:'声控灯闪了两下，又灭了。你站在楼道里，能听见楼上有很轻的脚步声——但你住在顶楼。',
+      o:[ {lb:'上一层看看', cost:{oil:1,nerve:1}, gain:{cloth:2}, res:'楼梯转角堆着一小捆布，像是有人特意放的。'},
+          {lb:'退回屋里', cost:{oil:1}, gain:{}, res:'你关上门。脚步声停了。' } ] },
+    { t:'楼下花坛里插着一根木棍，上面系着红绳。昨天没有这根木棍。',
+      o:[ {lb:'拔出来带走', cost:{oil:1}, gain:{wood:3}, res:'土很松，一拔就出来了。'},
+          {lb:'不动它', cost:{oil:1}, gain:{}, res:'你绕了过去。红绳在风里转。' } ] },
+    { t:'楼道口的快递柜自己弹开了一格。里面是一张纸，字迹是你的。',
+      o:[ {lb:'拿走那张纸', cost:{oil:1}, gain:{paper:3}, res:'纸上写着三个字：别上楼。'},
+          {lb:'关上柜门', cost:{oil:1}, gain:{}, res:'柜门关不上。你没再管它。' } ] }
+  ],
+  shop: [
+    { t:'冷柜还在响，灯管有一根是亮的。货架空了，但收银台上放着一沓纸。',
+      o:[ {lb:'拿走那沓纸', cost:{oil:1}, gain:{paper:4}, res:'纸上全是同一天的购物小票。'},
+          {lb:'打开冷柜', cost:{oil:1,nerve:1}, gain:{cloth:2,paper:1}, res:'冷柜最下层放着一件叠好的衣服。'},
+          {lb:'只站在门口听', cost:{oil:1}, gain:{}, res:'除了压缩机，什么声音都没有。' } ] },
+    { t:'自动门卡在中间，一半开一半关。你侧身进去。地上有拖拽的痕迹。',
+      o:[ {lb:'跟着痕迹走', cost:{oil:2,nerve:1}, gain:{cloth:4}, res:'痕迹停在储藏室门口。门后有东西。', lit:1},
+          {lb:'就在前面翻翻', cost:{oil:1}, gain:{cloth:1}, res:'只有几卷用了一半的胶带。'} ] }
+  ],
+  b3: [
+    { t:'三号楼整层就一户亮着灯。你知道那户人家三年前就搬走了。',
+      o:[ {lb:'按门铃', cost:{oil:1,nerve:2}, gain:{cloth:3,paper:2}, res:'门开了一条缝。里面没有人，但桌上有一杯还热的水。', lit:1},
+          {lb:'从门缝往里看', cost:{oil:1,clue:1}, gain:{paper:3}, res:'你读懂了门上的记号：这一户被人标过。'},
+          {lb:'绕到楼后', cost:{oil:1}, gain:{cloth:2}, res:'楼后晾衣绳上挂满了衣服，全是同一件。'} ] },
+    { t:'电梯停在 6 楼，一直没动。楼层显示器的数字在跳，但电梯不动。',
+      o:[ {lb:'走楼梯上去', cost:{oil:3,nerve:2}, gain:{cloth:5,metal:2}, res:'六楼的走廊尽头堆着一整箱东西。没人来找过。', lit:1},
+          {lb:'在一楼等', cost:{oil:2}, gain:{cloth:2}, res:'电梯停在那儿，一整晚都没下来。'} ] }
+  ],
+  shed: [
+    { t:'铁皮棚子的门半开着。里面是你小时候那种自行车，三辆，全都锁着。',
+      o:[ {lb:'撬一把锁', cost:{oil:2}, gain:{metal:4}, res:'锁很脆。你没要车，只要了链条。'},
+          {lb:'把三辆都看一遍', cost:{oil:2,clue:1}, gain:{metal:3,paper:2}, res:'三辆车的车牌号是连着的。'} ] },
+    { t:'车棚顶上有东西在响。抬头，只看见一片铁皮在晃。',
+      o:[ {lb:'等它停下来', cost:{oil:2}, gain:{metal:2}, res:'响声停了。地上多了一块螺丝。'},
+          {lb:'爬上去看', cost:{oil:2,nerve:2}, gain:{metal:5}, res:'顶上堆着一堆拆开的零件，摆得很整齐。', lit:1} ] }
+  ],
+  cross: [
+    { t:'四个路口都空着。电子屏上滚动着日期，比今天早了七年。',
+      o:[ {lb:'走进屏幕照亮的那个路口', cost:{oil:1,nerve:1}, gain:{paper:3}, res:'地上散着几张传单。活动日期是七年前。'},
+          {lb:'逆着电子屏走', cost:{oil:2,nerve:1}, gain:{paper:2,cloth:2}, res:'光在你背后。前面的路更暗，但东西更多。'},
+          {lb:'站在原地等一辆车', cost:{oil:2}, gain:{}, res:'没有车。凌晨四点也没有。'} ] },
+    { t:'斑马线上摆着一张椅子，正对着你。椅子上有一件外套。',
+      o:[ {lb:'拿走外套', cost:{oil:1}, gain:{cloth:4}, res:'很干净，还有洗衣液的味道。'},
+          {lb:'坐下', cost:{oil:2,nerve:2}, gain:{cloth:2,paper:2}, res:'你坐了一分钟。什么都没发生，除了你不再觉得冷。', lit:1} ] }
+  ],
+  under: [
+    { t:'水声盖住了别的声音。桥洞的墙上有字，一层压着一层。',
+      o:[ {lb:'读最外面的那层', cost:{oil:1,clue:1}, gain:{paper:3}, res:'最近写的一行：别在周三来。'},
+          {lb:'往深处走', cost:{oil:3,nerve:2}, gain:{cloth:5,metal:2}, res:'最里面有铺盖和一只铁盒。人已经不在了。', lit:1},
+          {lb:'离开', cost:{oil:1}, gain:{}, res:'你上到桥面。车流已经开始了。'} ] }
+  ],
+  yard: [
+    { t:'废品站的东西堆得比人高。老板的椅子上盖着塑料布。',
+      o:[ {lb:'翻铁堆', cost:{oil:2}, gain:{metal:5}, res:'你翻出几块还带着螺丝的角铁。'},
+          {lb:'翻纸堆', cost:{oil:2}, gain:{paper:5}, res:'一摞旧报纸，日期都停在同一年。'},
+          {lb:'找老板', cost:{oil:2,nerve:2}, gain:{metal:3,cloth:3}, res:'帘子后面有人，但他没回头。你拿了东西就走了。', lit:1} ] }
+  ],
+  post: [
+    { t:'老邮局的信箱全是开着的，塞满了。最早的一封邮戳是二十年前。',
+      o:[ {lb:'抽一沓出来', cost:{oil:1}, gain:{paper:5}, res:'收件人都是同一个名字。'},
+          {lb:'按邮戳找最近的一封', cost:{oil:2,clue:1}, gain:{paper:3,cloth:2}, res:'最近那封是上周的，收件人是你的地址。', lit:1} ] },
+    { t:'分拣室的门开着，传送带上还卡着几个包裹。',
+      o:[ {lb:'拆一个', cost:{oil:1,nerve:1}, gain:{cloth:3,paper:2}, res:'包裹里是一件旧衣服，尺码正好。'},
+          {lb:'把传送带关掉', cost:{oil:2}, gain:{metal:3}, res:'机器停了。你从传送带里抽出几根轴。'} ] }
+  ],
+  bank: [
+    { t:'护栏断了一截。往下走是河滩，水声很近，但看不见水。',
+      o:[ {lb:'沿着断口下去', cost:{oil:3,nerve:2}, gain:{wood:6}, res:'河滩上漂满了木头，都是上游冲下来的。', lit:1},
+          {lb:'在堤上走一段', cost:{oil:2}, gain:{wood:3}, res:'你捡了几根干的树枝。'} ] }
+  ],
+  sub: [
+    { t:'扶梯还在转，但没有人上去。站台上的灯每隔三秒闪一次。',
+      o:[ {lb:'下到站台', cost:{oil:3,nerve:2}, gain:{metal:4,paper:3}, res:'售票机还能用，里面掉出一把硬币和几张票。', lit:1},
+          {lb:'坐在扶梯上看它转', cost:{oil:2}, gain:{metal:2}, res:'你看了很久。扶手带上有一圈手印，位置很整齐。' } ] }
+  ],
+  shell: [
+    { t:'二十三层的骨架。电梯井没有门，能直接看到最底下。',
+      o:[ {lb:'往上爬十层', cost:{oil:4,nerve:3}, gain:{cloth:6,metal:4}, res:'十层有一间已经装好窗的屋子，里面有人住过。', lit:2},
+          {lb:'在底层找找', cost:{oil:2}, gain:{metal:3,cloth:2}, res:'水泥地上散着保温棉和扎带。'} ] }
+  ],
+  edge: [
+    { t:'再往前，路灯就不管了。你站在最后一盏灯下。前面是完整的黑。',
+      o:[ {lb:'走出灯的边界', cost:{oil:4,nerve:3}, gain:{metal:8,cloth:6}, res:'你走了二十步，脚下踩到很硬的东西。是别人留下的箱子，装满了。', lit:2},
+          {lb:'留在灯下', cost:{oil:2,clue:1}, gain:{paper:4}, res:'你在地上找到一张手绘的地图。上面的边界，比你走过的远得多。'} ] }
+  ]
+};
+
+/* 特殊节点：城市在模仿你 */
+const TRACE_NODE = {
+  t:'这条路你已经走过很多次了。今天，路边的墙上有一行粉笔字，笔迹和你一模一样。',
+  o:[ {lb:'擦掉它', cost:{oil:2}, gain:{}, res:'你擦了很久。擦完之后，墙上还剩一点白。'},
+      {lb:'在旁边写一句别的', cost:{oil:2,nerve:1}, gain:{paper:3}, res:'你写了一句今天的心情。写完觉得有点蠢。'} ]
+};
+const MIRROR_NODE = {
+  t:'路口站着一个人，背对着你。他穿的和你一样，走路的姿势也一样。他在等你先动。',
+  o:[ {lb:'先走', cost:{oil:3,nerve:3}, gain:{metal:5,cloth:5}, res:'你走过去。他也走。走到路口他就不见了，地上留下一盏还亮着的灯。', lit:2},
+      {lb:'往回走', cost:{oil:2}, gain:{}, res:'你没回头，但你知道他跟着。走到楼下，声音就没了。'} ]
+};
+
+/* 诱惑节点：刷手机这件事被做成了怪 */
+const TEMPT_NODE = {
+  t:'一扇窗亮着。里面很暖，有电视的声音，还有人在笑。',
+  o:[ {lb:'看一会儿', cost:{nerve:1}, gain:{paper:2,cloth:1}, res:'你站了十分钟。窗里一直在笑，但你听不清在笑什么。', mark:true},
+      {lb:'走开', cost:{oil:1}, gain:{}, res:'你走了。窗还亮着，笑声也跟着你走了一段。'} ]
+};
+
+/* ══════════════ 状态 ══════════════ */
+function blankState(){
+  const city = {};
+  BLOCKS.forEach(b => { city[b.id] = { lit:0, visits:0, drained:0, note:0 }; });
+  city.home.lit = 1;
+  return {
+    v: 3, ver: APP_VER,
+    date: todayKey(),
+    checks: {},           // 今日打卡
+    sleptLast: false,     // 昨天是否早睡 → 今天 +2 油
+    mats: { wood:0, cloth:0, paper:0, metal:0 },
+    build: { shelf:0, sand:0, wall:0, gram:0 },
+    city: city,
+    night: null,
+    clueBank: 0,
+    walker: { gen:1, injuries:0, name:'你' },
+    notes: [],
+    stats: { nights:0, deaths:0, maxDepth:0, totalSteps:0 },
+    history: [],          // 每晚 {block, steps, end}
+    firstRun: true
+  };
+}
+let state = null;
+
+/* 日期（本地时区，不用 toISOString，避免 UTC 偏移） */
 function todayKey(d){
   const t = d || new Date();
-  return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate());
-}
-function parseDay(s){
-  const a = String(s).split('-');
-  return new Date(+a[0], +a[1] - 1, +a[2]);
-}
-function dayDiff(a, b){
-  return Math.round((parseDay(b) - parseDay(a)) / 86400000);
-}
-function esc(s){
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-function pick(a){ return a[Math.floor(Math.random() * a.length)]; }
-
-/* ---------------------- 状态 ---------------------- */
-function blankState(){
-  return {
-    v: 2,
-    createdAt: todayKey(),
-    days: {},                                        // { '2026-10-19': ['wake','train'] }
-    yard: { wake:0, train:0, shower:0, study:0, quit:0, read:0, sleep:0 },
-    streak: 0,
-    bestStreak: 0,
-    totalMet: 0,
-    lastMet: null,
-    relics: [],
-    exp: { week: null, used: false, log: [] },
-    sound: true,
-    migrated: false
-  };
+  const m = String(t.getMonth()+1).padStart(2,'0');
+  const day = String(t.getDate()).padStart(2,'0');
+  return t.getFullYear() + '-' + m + '-' + day;
 }
 
-let state = blankState();
-let view = 'yard';
-let anim = {};
-
-/* ---------------------- 存储 ---------------------- */
-function save(){
-  try { localStorage.setItem(SAVE_KEY2, JSON.stringify(state)); } catch(e){}
-}
 function load(){
-  let ok = false;
-  try {
-    const raw = localStorage.getItem(SAVE_KEY2);
-    if (raw){
-      const o = JSON.parse(raw);
-      state = Object.assign(blankState(), o);
-      state.yard = Object.assign(blankState().yard, o.yard || {});
-      state.exp  = Object.assign(blankState().exp, o.exp || {});
-      if (!Array.isArray(state.relics)) state.relics = [];
-      if (!state.days || typeof state.days !== 'object') state.days = {};
-      ok = true;
-    }
-  } catch(e){}
-  if (!ok) migrateV1();
-  rollDay();
-  return ok;
-}
-
-/* 从 v1 迁移：只把「哪天做了几件」搬过来，按顺序补到前 N 项 */
-function migrateV1(){
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return;
-    const o = JSON.parse(raw);
-    if (!o || !Array.isArray(o.log)) return;
-    const order = ['wake','train','shower','study','quit','read','sleep'];
-    let n = 0;
-    o.log.forEach(item => {
-      if (!item || !item.date) return;
-      const c = Math.max(0, Math.min(7, item.n || 0));
-      if (!c) return;
-      const done = order.slice(0, c);
-      state.days[item.date] = done;
-      done.forEach(k => { state.yard[k] = (state.yard[k] || 0) + 1; });
-      n++;
-    });
-    if (n){
-      state.migrated = true;
-      state.createdAt = o.createdAt || state.createdAt;
-      state.streak = o.streak || 0;
-      state.bestStreak = o.bestStreak || o.streak || 0;
-      state.totalMet = o.totalFull || 0;
-      save();
-    }
-  } catch(e){}
-}
-
-/* ---------------------- 今日 ---------------------- */
-function todayList(){
-  const d = state.days[todayKey()];
-  return Array.isArray(d) ? d : [];
-}
-function todayCount(){ return todayList().length; }
-function todayMet(){ return todayCount() >= GOAL; }
-
-function doneTask(id){
-  const k = todayKey();
-  if (!Array.isArray(state.days[k])) state.days[k] = [];
-  if (state.days[k].includes(id)) return false;
-  state.days[k].push(id);
-  state.yard[id] = (state.yard[id] || 0) + 1;
-
-  if (state.days[k].length === GOAL){
-    state.totalMet++;
-    const prev = prevMetDate(k);
-    state.lastMet = k;
-    state.streak = (prev && dayDiff(prev, k) <= 1) ? state.streak + 1 : 1;
-    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+  let raw = null;
+  try{ raw = localStorage.getItem(SAVE); }catch(e){}
+  if (raw){
+    try{
+      const s = JSON.parse(raw);
+      if (s && s.v === 3){ state = s; }
+    }catch(e){}
   }
-  save();
-  return true;
+  if (!state){
+    state = blankState();
+    // 把 v2 院子的记录变成一段"前人笔记"
+    const legacy = readLegacy();
+    if (legacy) state.notes.push({
+      who: '另一个人', gen: 0,
+      text: '前一个人在墙上留下过记录：他做过 ' + legacy + ' 件事，但没有一件做完。'
+    });
+    save();
+  }
+  rollDay();
 }
-function prevMetDate(k){
-  const keys = Object.keys(state.days)
-    .filter(d => d < k && (state.days[d] || []).length >= GOAL)
-    .sort();
-  return keys.length ? keys[keys.length - 1] : null;
+function readLegacy(){
+  try{
+    const raw = localStorage.getItem('rike_yard_v2');
+    if (!raw) return 0;
+    const o = JSON.parse(raw);
+    const n = Object.values(o.yard || {}).reduce((a,b) => a + (b||0), 0);
+    return n > 0 ? n : 0;
+  }catch(e){ return 0; }
 }
+function save(){
+  try{ localStorage.setItem(SAVE, JSON.stringify(state)); }catch(e){}
+}
+
+/* 跨日：重置打卡、结算早睡奖励、街区恢复 */
 function rollDay(){
   const k = todayKey();
-  if (state.lastMet && dayDiff(state.lastMet, k) > 1 && state.streak !== 0){
-    state.streak = 0;
-    save();
-  }
-  const cut = new Date(); cut.setDate(cut.getDate() - 120);
-  const ck = todayKey(cut);
-  let changed = false;
-  Object.keys(state.days).forEach(d => {
-    if (d < ck){ delete state.days[d]; changed = true; }
+  if (state.date === k) return;
+  state.date = k;
+  state.checks = {};
+  state.night = null;
+  // 街区枯竭自然恢复
+  Object.keys(state.city).forEach(id => {
+    const b = state.city[id];
+    if (b.drained > 0) b.drained -= 1;
   });
-  if (changed) save();
+  state.sleptLast = !!state._sleptToday;
+  state._sleptToday = false;
+  state.nightDay = null;
+  state.nightsToday = 0;
+  save();
 }
 
-/* ---------------------- 院子绘制 ---------------------- */
-function yardParams(){
-  const y = state.yard;
+/* ══════════════ 筹码计算 ══════════════ */
+function chips(){
+  const c = state.checks;
+  const n = TASKS.filter(t => c[t.id]).length;
+  const shelfLv = state.build.shelf;
+  // 同一天重复入夜：体力透支，第二次起每晚扣 2 滴，最低 1 滴
+  const times = (state.nightDay === state.date) ? (state.nightsToday || 0) : 0;
+  const base = 2 + n + (c.wake ? 1 : 0) - (c.sleep ? 1 : 0) + (state.sleptLast ? 2 : 0);
   return {
-    steps:  Math.min(10, y.wake),
-    treeH:  26 + Math.min(96, y.train * 7),
-    treeW:  18 + Math.min(54, y.train * 4),
-    water:  Math.min(1, y.shower / 12),
-    books:  Math.min(12, y.study),
-    bricks: Math.min(18, y.quit),
-    porch:  Math.min(8, y.read),
-    tiles:  Math.min(1, y.sleep / 12),
-    met:    todayMet()
+    count: n,
+    oil: Math.max(1, base - times * 2),
+    nerve: (c.train ? 2 : 0) + (c.quit ? 1 : 0),
+    clue: (c.study ? 1 : 0) + (c.read ? 2 : 0) + shelfLv + (state.clueBank || 0),
+    stealth: c.shower ? 1 : 0
   };
 }
 
-function svgYard(){
-  const p = yardParams();
-  const lit = p.met;
-  const skyTop = lit ? '#fdf3dc' : '#f7f2e6';
-  const skyBot = lit ? '#f8e9c9' : '#efe6d2';
+/* ══════════════ 城市逻辑 ══════════════ */
+function blockState(id){ return state.city[id]; }
+function isUnlocked(b){
+  if (!b.unlock) return true;
+  return blockState(b.unlock).lit >= 1;
+}
+function unlockedList(){ return BLOCKS.filter(isUnlocked); }
 
-  /* 树 */
-  const cx = 62, base = 322;
-  const th = p.treeH, tw = p.treeW;
-  let tree = `<path d="M${cx} ${base} L${cx} ${base - th * 0.5}" stroke="#7a6a52" stroke-width="${(3 + Math.min(4, th / 40)).toFixed(1)}" stroke-linecap="round" fill="none"/>`;
-  if (th > 30)
-    tree += `<ellipse cx="${cx}" cy="${base - th * 0.55}" rx="${tw}" ry="${tw * 0.72}" fill="#7f9368" opacity=".92"/>`;
-  if (th > 52){
-    tree += `<ellipse cx="${(cx - tw * 0.42).toFixed(1)}" cy="${(base - th * 0.72).toFixed(1)}" rx="${(tw * 0.66).toFixed(1)}" ry="${(tw * 0.56).toFixed(1)}" fill="#8ea278" opacity=".9"/>`;
-    tree += `<ellipse cx="${(cx + tw * 0.40).toFixed(1)}" cy="${(base - th * 0.70).toFixed(1)}" rx="${(tw * 0.62).toFixed(1)}" ry="${(tw * 0.52).toFixed(1)}" fill="#728a5d" opacity=".9"/>`;
-  }
-  if (th > 78)
-    tree += `<ellipse cx="${cx}" cy="${(base - th * 0.86).toFixed(1)}" rx="${(tw * 0.72).toFixed(1)}" ry="${(tw * 0.58).toFixed(1)}" fill="#93a87c" opacity=".88"/>`;
-
-  /* 石阶 */
-  let steps = '';
-  for (let i = 0; i < p.steps; i++){
-    const w = 66 - i * 3.4;
-    const y = 392 - i * 5;
-    steps += `<rect x="${(180 - w / 2).toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="5.5" rx="1.6" fill="#cbb99c" stroke="#b9a684" stroke-width=".7" opacity="${(0.55 + i * 0.045).toFixed(2)}"/>`;
-  }
-
-  /* 墙砖 */
-  let bricks = '';
-  for (let i = 0; i < p.bricks; i++){
-    const row = Math.floor(i / 6), col = i % 6;
-    bricks += `<rect x="${296 - col * 15}" y="${246 + row * 9}" width="13" height="7.4" rx="1.2" fill="#c2a98a" opacity=".85" stroke="#ac9273" stroke-width=".6"/>`;
-  }
-
-  /* 井水 */
-  const well = p.water > 0.02
-    ? `<ellipse cx="292" cy="${(408 - p.water * 14).toFixed(1)}" rx="18" ry="5.5" fill="#8fa7ad" opacity=".62"/>
-       <ellipse cx="292" cy="${(406 - p.water * 14).toFixed(1)}" rx="16" ry="4.6" fill="#a9c0c4" opacity=".52"/>`
-    : '';
-
-  /* 窗内书 */
-  let books = '';
-  for (let i = 0; i < p.books; i++){
-    const col = Math.floor(i / 4), row = i % 4;
-    const c = ['#b8822c', '#8d9a74', '#a8764f', '#7d8fa0'][i % 4];
-    books += `<rect x="${196 + col * 7}" y="${300 - row * 6}" width="5.6" height="5" rx=".8" fill="${c}" opacity=".9"/>`;
-  }
-
-  /* 廊下书 */
-  let porch = '';
-  for (let i = 0; i < p.porch; i++){
-    const x = 236 + i * 5.2, y = 366 - i * 1.4;
-    porch += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="4.6" height="9" rx=".8" fill="#a3906f" opacity=".85" transform="rotate(${i % 2 ? 8 : -6} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
-  }
-
-  /* 屋顶缺瓦 */
-  let holes = '';
-  const hn = Math.round((1 - p.tiles) * 6);
-  for (let i = 0; i < hn; i++){
-    holes += `<path d="M${158 + i * 17} 268 l9 -1 l-2 8 z" fill="#e0d4bd" opacity=".95"/>`;
-  }
-
-  /* 灯 */
-  const lamp = lit
-    ? `<g>
-         <circle cx="143" cy="330" r="26" fill="#e8b64f" opacity=".16"/>
-         <circle cx="143" cy="330" r="15" fill="#e8b64f" opacity=".26"/>
-         <path d="M143 316 v-6" stroke="#8b7a5e" stroke-width="1.6"/>
-         <path d="M136 316 h14 l-2 15 h-10 z" fill="#e3ae43" opacity=".95"/>
-         <circle cx="143" cy="324" r="2.6" fill="#fff3d0"/>
-       </g>`
-    : `<g opacity=".42">
-         <path d="M143 316 v-6" stroke="#9a8b72" stroke-width="1.6"/>
-         <path d="M136 316 h14 l-2 15 h-10 z" fill="#cdbfa6"/>
-       </g>`;
-
-  const relics = state.relics.slice(0, 4).map((r, i) =>
-    `<g transform="translate(${16 + i * 22},246)">
-       <rect x="0" y="0" width="17" height="17" rx="3" fill="#fffdf7" stroke="${r.color || '#b8822c'}" stroke-width="1.2"/>
-       <text x="8.5" y="12.6" font-size="9" text-anchor="middle" fill="${r.color || '#b8822c'}">${esc(r.mark || '◇')}</text>
-     </g>`).join('');
-
-  return `<svg viewBox="0 60 360 360" preserveAspectRatio="xMidYMid meet" aria-label="我的院子">
-  <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${skyTop}"/><stop offset="1" stop-color="${skyBot}"/>
-    </linearGradient>
-    <radialGradient id="sun" cx=".5" cy=".5" r=".5">
-      <stop offset="0" stop-color="#f2c96e" stop-opacity=".55"/>
-      <stop offset="1" stop-color="#f2c96e" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-
-  <rect width="360" height="430" fill="url(#sky)"/>
-  ${lit
-    ? `<circle cx="300" cy="92" r="58" fill="url(#sun)"/><circle cx="300" cy="92" r="19" fill="#f0c467" opacity=".75"/>`
-    : `<circle cx="300" cy="92" r="30" fill="#e9dfc6" opacity=".7"/>`}
-
-  <path d="M0 214 Q52 176 104 208 Q140 230 178 206 Q226 176 272 210 Q316 240 360 208 L360 260 L0 260 Z" fill="#ddd2ba" opacity=".62"/>
-  <path d="M0 236 Q60 208 118 232 Q168 252 214 230 Q268 206 320 236 Q344 250 360 240 L360 282 L0 282 Z" fill="#cfc2a7" opacity=".55"/>
-
-  <rect x="0" y="300" width="360" height="130" fill="#ddd0b4"/>
-  <path d="M0 300 Q90 292 180 302 Q272 312 360 298 L360 316 L0 316 Z" fill="#d5c7a8"/>
-  <path d="M168 430 Q176 380 180 340 L206 340 Q204 384 216 430 Z" fill="#e2d6bd" opacity=".85"/>
-
-  <rect x="0" y="238" width="360" height="70" fill="#e3d7bf"/>
-  <g opacity=".22" stroke="#b9a684" stroke-width=".7">
-    <path d="M0 256 h360 M0 274 h360 M0 292 h360"/>
-    <path d="M40 238 v18 M120 238 v18 M200 238 v18 M280 238 v18 M0 256 v18 M80 256 v18 M160 256 v18 M240 256 v18 M320 256 v18 M40 274 v18 M120 274 v18 M200 274 v18 M280 274 v18"/>
-  </g>
-  <rect x="0" y="232" width="360" height="9" rx="2" fill="#b9a684"/>
-  ${bricks}
-
-  <rect x="122" y="288" width="118" height="86" fill="#f4ecdb" stroke="#c9b89a" stroke-width="1.2"/>
-  <path d="M112 288 L181 250 L250 288 Z" fill="#b99a78" stroke="#a4855f" stroke-width="1.3"/>
-  <g stroke="#9c7c56" stroke-width=".8" fill="none" opacity=".45">
-    <path d="M129 280 L181 258 L233 280"/>
-    <path d="M143 286 L181 264 L219 286"/>
-    <path d="M157 290 L181 271 L205 290"/>
-  </g>
-  ${holes}
-  <path d="M112 288 L181 250 L250 288" fill="none" stroke="#9c7c56" stroke-width="2.4" stroke-linejoin="round"/>
-  <rect x="166" y="316" width="34" height="58" rx="2" fill="#8b6f50" stroke="#75593c" stroke-width="1.2"/>
-  <path d="M183 316 v58" stroke="#6a4f35" stroke-width="1"/>
-  <circle cx="190" cy="346" r="1.7" fill="#d9b45f"/>
-  <rect x="192" y="298" width="30" height="26" rx="2" fill="#f7efd9" stroke="#a4855f" stroke-width="1.3"/>
-  <path d="M207 298 v26 M192 311 h30" stroke="#b99a78" stroke-width="1.1"/>
-  ${books}
-
-  <path d="M228 376 h56 l-4 6 h-48 z" fill="#c9b394" stroke="#b09a7a" stroke-width="1"/>
-  <path d="M234 382 v14 M278 382 v14" stroke="#b09a7a" stroke-width="2"/>
-  ${porch}
-
-  ${tree}
-
-  <ellipse cx="292" cy="410" rx="23" ry="9" fill="#c4b295" stroke="#ab9778" stroke-width="1.2"/>
-  <ellipse cx="292" cy="406" rx="17" ry="6.4" fill="#7d6d54"/>
-  ${well}
-  <path d="M272 404 v-14 M312 404 v-14 M272 390 h40" stroke="#a89372" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-  <path d="M292 390 v10" stroke="#8d7b5e" stroke-width="1.2"/>
-
-  ${lamp}
-  ${steps}
-
-  <!-- 前景：草与石 -->
-  <g opacity=".62" stroke="#8a9a72" stroke-width="1.6" fill="none" stroke-linecap="round">
-    <path d="M20 412 q3 -12 6 0 M30 414 q2 -10 5 0 M56 410 q3 -13 6 0 M66 414 q2 -9 5 0"/>
-    <path d="M324 412 q3 -12 6 0 M336 414 q2 -10 5 0 M348 410 q3 -12 6 0"/>
-  </g>
-  <g fill="#c6b89c" opacity=".85">
-    <ellipse cx="110" cy="404" rx="3.2" ry="1.8"/>
-    <ellipse cx="120" cy="412" rx="2.2" ry="1.3"/>
-    <ellipse cx="252" cy="408" rx="2.8" ry="1.6"/>
-    <ellipse cx="262" cy="415" rx="2" ry="1.2"/>
-    <ellipse cx="88" cy="416" rx="2.4" ry="1.4"/>
-  </g>
-  <g stroke="#bcae92" stroke-width="1" fill="none" opacity=".5">
-    <path d="M96 400 q8 -3 16 0 M240 404 q9 -3 17 0"/>
-  </g>
-
-  ${relics}
-  ${lit ? `<rect width="360" height="430" fill="#e8b64f" opacity=".045"/>` : ''}
-  </svg>`;
+/* 产出：越走越穷 */
+function yieldOf(bid){
+  const b = state.city[bid];
+  const def = BLOCKS.find(x => x.id === bid);
+  const base = 3 + def.dist;
+  const v = Math.max(1, Math.round(base * (1 - b.drained * 0.15)));
+  return { mat: def.res, n: v };
+}
+/* 危险度：越走越安全，但暗处更险 */
+function dangerOf(bid){
+  const b = state.city[bid];
+  const def = BLOCKS.find(x => x.id === bid);
+  return Math.max(0, def.danger + (1 - b.lit/3) * 2 - b.drained * 0.2);
 }
 
-/* ---------------------- 院子视图 ---------------------- */
-function renderYard(){
-  const c = todayCount(), m = todayMet();
-  const chronicle = yardChronicle();
+/* ══════════════ 入夜 ══════════════ */
+function startNight(startId){
+  const c = chips();
+  // 记一次「今晚的次数」，同一天再来一次就要透支
+  if (state.nightDay !== state.date){ state.nightDay = state.date; state.nightsToday = 0; }
+  state.nightsToday = (state.nightsToday || 0) + 1;
+  const b = state.city[startId];
+  state.night = {
+    start: startId, cur: startId, steps: 0,
+    oil: c.oil, oilMax: c.oil,
+    nerve: c.nerve, clue: c.clue, stealth: c.stealth,
+    carried: { wood:0, cloth:0, paper:0, metal:0 },
+    node: null, lastBlock: startId, ended: false
+  };
+  b.visits += 1;
+  nextNode();
+  save();
+  render();
+}
 
-  let h = '';
-  if (state.migrated){
-    h += `<div class="note" style="margin-top:10px">之前那些天的记录，已经搬进院子里了 —— 你现在看到的，都是你自己垒起来的。</div>`;
-    state.migrated = false;
-    save();
+/* 抽节点 */
+function pickNode(){
+  const n = state.night;
+  const bid = n.cur;
+  const b = state.city[bid];
+  const def = BLOCKS.find(x => x.id === bid);
+
+  // 模仿机制：同街区到访 6 次 → 镜中人；3 次 → 痕迹
+  if (b.visits >= 6 && !b.mirrorShown){
+    b.mirrorShown = true;
+    return MIRROR_NODE;
+  }
+  if (b.visits >= 3 && !b.traceShown){
+    b.traceShown = true;
+    return TRACE_NODE;
+  }
+  // 诱惑节点：低概率
+  if (Math.random() < 0.12) return TEMPT_NODE;
+
+  const pool = NODES[bid] || NODES.home;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function nextNode(){
+  const n = state.night;
+  if (n.oil <= 0){ endNight('oil'); return; }
+  n.node = pickNode();
+}
+
+/* 邻接表：能走到哪 */
+const ADJ = {
+  home:['shop','b3','shed'], shop:['cross'], b3:['under'], shed:['yard'],
+  cross:['post'], under:['bank'], yard:[], post:['sub'], bank:['shell'],
+  shell:['edge'], sub:[], edge:[]
+};
+function neighbors(id){
+  const out = new Set(ADJ[id] || []);
+  Object.keys(ADJ).forEach(k => { if (ADJ[k].includes(id)) out.add(k); });
+  return [...out].filter(x => isUnlocked(BLOCKS.find(b => b.id === x)));
+}
+
+/* ══════════════ 选项执行 ══════════════ */
+function canAfford(o){
+  const n = state.night;
+  const c = o.cost || {};
+  if ((c.oil||0) > n.oil) return false;
+  if ((c.nerve||0) > n.nerve) return false;
+  if ((c.clue||0) > n.clue) return false;
+  return true;
+}
+
+function chooseOpt(idx){
+  const n = state.night;
+  if (!n || n.ended) return;
+  const node = n.node;
+  const o = node.o[idx];
+  if (!o || !canAfford(o)){ toast('这东西你还拿不动'); return; }
+
+  const c = o.cost || {};
+  n.oil   -= (c.oil || 0);
+  n.nerve -= (c.nerve || 0);
+  n.clue  -= (c.clue || 0);
+  n.steps += 1;
+
+  // 材料入袋
+  const g = o.gain || {};
+  let got = 0;
+  Object.keys(g).forEach(k => { n.carried[k] = (n.carried[k]||0) + g[k]; got += g[k]; });
+
+  // 街区状态：到访 +1、枯竭 +1（若拿到东西）、亮度按选项
+  const b = state.city[n.cur];
+  const def = BLOCKS.find(x => x.id === n.cur);
+  if (got > 0){
+    b.drained = Math.min(5, b.drained + 1);
+    if (o.lit) b.lit = Math.min(3, b.lit + o.lit);
+    else b.lit = Math.min(3, b.lit + 0.5);
+  }
+  // 诱惑节点：这个街区"记住"你
+  if (o.mark){
+    b.drained = Math.min(5, b.drained + 1);
+    b.watched = (b.watched||0) + 1;
   }
 
-  h += `<div id="yard">${svgYard()}
-    <div class="cap">
-      <span>${chronicle}</span>
-      <span><b>${m ? '今日已达成' : '还差 ' + Math.max(0, GOAL - c) + ' 件'}</b></span>
-    </div>
-  </div>`;
+  state.stats.totalSteps = (state.stats.totalSteps||0) + 1;
+  state.stats.maxDepth = Math.max(state.stats.maxDepth||0, n.steps);
 
-  h += `<div class="goalbar ${m ? 'met' : ''}">
-    <div class="txt">${m
-      ? '今日达成 · 院子里多了一点东西'
-      : '今天做满 <b>' + GOAL + '</b> 件，院子就往前走一步'}</div>
-    <div class="pips">${[0, 1, 2].map(i => `<span class="pip ${i < c ? 'f' : ''}"></span>`).join('')}</div>
-  </div>`;
+  // 结算文本
+  showResult(o.res, got ? gainText(g) : '');
+  save();
+  renderBar();
+}
 
-  h += `<div class="sec">
-    <div class="sec-h"><span class="x">今日七件事</span><span class="y">任选三件即可</span></div>`;
+function gainText(g){
+  return Object.keys(g).filter(k => g[k] > 0)
+    .map(k => MATS[k].name + ' +' + g[k]).join(' · ');
+}
+
+/* 结果页 */
+function showResult(text, gains){
+  openSheet(
+    '<h3>你做了什么</h3>' +
+    '<div class="body">' + text + '</div>' +
+    (gains ? '<div class="body" style="color:var(--acc);font-weight:600">' + gains + '</div>' : '') +
+    '<button class="btn primary" data-act="after-node">继续</button>'
+  );
+}
+
+function afterNode(){
+  const n = state.night;
+  closeSheet();
+  if (n.oil <= 0){ endNight('oil'); return; }
+  // 每 2 步给一次「换地方」的机会
+  if (n.steps > 0 && n.steps % 2 === 0){
+    n.pendingMove = true;
+    render();
+    return;
+  }
+  nextNode();
+  render();
+}
+
+/* 移动 */
+function moveTo(bid){
+  const n = state.night;
+  if (n.oil < 1){ toast('油不够走过去'); return; }
+  n.oil -= 1;
+  n.cur = bid;
+  n.steps += 1;
+  n.pendingMove = false;
+  state.city[bid].visits += 1;
+  nextNode();
+  save();
+  render();
+}
+
+/* ══════════════ 结束一夜 ══════════════ */
+function endNight(reason){
+  const n = state.night;
+  if (!n || n.ended) return;
+  n.ended = true;
+
+  let keepRate = 1;
+  let why = '';
+  if (reason === 'home'){
+    why = '你自己决定回来了。灯还够，路还在那儿。';
+  } else if (reason === 'oil'){
+    const sand = state.build.sand;
+    keepRate = [0.5, 0.7, 0.85, 1][sand] || 0.5;
+    why = keepRate >= 1
+      ? '灯油烧干了。但沙袋挡着，东西一样没少。'
+      : '灯油烧干了。你摸黑走回来，掉了一些东西。';
+  } else if (reason === 'hurt'){
+    keepRate = 0.5;
+    why = '你身上不够硬，硬闯的时候受了伤。回来的路上掉了东西。';
+  }
+
+  // 材料入库
+  const added = {};
+  Object.keys(n.carried).forEach(k => {
+    const v = Math.floor((n.carried[k]||0) * keepRate);
+    if (v > 0){ state.mats[k] = (state.mats[k]||0) + v; added[k] = v; }
+  });
+
+  // 线索银行：本夜没花完的线索留一半
+  state.clueBank = Math.floor(n.clue / 2);
+
+  state.stats.nights += 1;
+  state.history.push({ date: state.date, block: n.start, steps: n.steps, end: reason });
+  if (state.history.length > 60) state.history.shift();
+
+  if (reason === 'hurt'){
+    state.walker.injuries += 1;
+    if (state.walker.injuries >= 3) return die();
+  }
+
+  state.night = null;
+  save();
+  rollDay();
+  render();
+
+  const g = Object.keys(added).map(k => MATS[k].name + ' +' + added[k]).join('  ');
+  openSheet(
+    '<h3>回来了</h3>' +
+    '<div class="body">' + why + '</div>' +
+    (g ? '<div class="body" style="color:var(--acc);font-weight:600">带回：' + g + '</div>'
+       : '<div class="body" style="color:var(--ink3)">什么都没带回来。</div>') +
+    '<div class="body" style="color:var(--ink3);font-size:13px">今晚走了 ' + n.steps + ' 步。</div>' +
+    '<button class="btn primary" data-act="close-sheet">好</button>'
+  );
+}
+
+/* 死亡：不清零，留给下一代 */
+function die(){
+  const n = state.night;
+  const lastBlock = BLOCKS.find(b => b.id === n.cur);
+  const mostVisited = Object.keys(state.city)
+    .sort((a,b) => state.city[b].visits - state.city[a].visits)[0];
+  const mostName = BLOCKS.find(b => b.id === mostVisited).name;
+
+  state.notes.push({
+    who: '第 ' + state.walker.gen + ' 个人',
+    gen: state.walker.gen,
+    text: '他最后在' + lastBlock.name + '。他最常走的是' + mostName +
+          '，一共 ' + state.city[mostVisited].visits + ' 次。笔记到这里就断了。'
+  });
+
+  state.stats.deaths += 1;
+  state.walker.gen += 1;
+  state.walker.injuries = 0;
+  state.night = null;
+  // 城市、建造、材料全部保留
+  state.clueBank = 1 + state.build.gram;
+  save();
+  rollDay();
+  render();
+
+  openSheet(
+    '<h3>这一代结束了</h3>' +
+    '<div class="body">你在' + lastBlock.name + '没能回来。<br><br>' +
+    '但城市还在。你点亮的 ' +
+    Object.keys(state.city).filter(id => state.city[id].lit >= 3).length +
+    ' 个街区没有灭。安全屋里的东西也还在。<br><br>' +
+    '下一个人会捡到你的笔记。</div>' +
+    '<button class="btn primary" data-act="close-sheet">继续</button>'
+  );
+}
+
+/* ══════════════ 建造 ══════════════ */
+function buildCost(def){
+  const lv = state.build[def.id];
+  if (lv >= 3) return null;
+  return { mat: def.costMat, n: def.costs[lv] };
+}
+function doBuild(id){
+  const def = BUILDS.find(b => b.id === id);
+  const cost = buildCost(def);
+  if (!cost) return;
+  if ((state.mats[cost.mat]||0) < cost.n){ toast(MATS[cost.mat].name + '不够，还差 ' + (cost.n - (state.mats[cost.mat]||0))); return; }
+  state.mats[cost.mat] -= cost.n;
+  state.build[id] += 1;
+  save();
+  render();
+  toast(def.name + ' 升到 ' + state.build[id] + ' 级');
+}
+
+/* ══════════════ 渲染 ══════════════ */
+let tab = 'day';
+
+function renderBar(){
+  const n = state.night;
+  const c = chips();
+  document.getElementById('hd-t').textContent = n ? '夜里' : '夜行';
+  document.getElementById('hd-s').textContent = n ? '路还长' : '天亮着';
+  document.getElementById('hd-n').textContent = n ? n.oil : c.oil;
+  document.getElementById('hd-k').textContent = n ? '滴油（剩）' : '滴灯油';
+}
+
+function render(){
+  const n = state.night;
+  document.body.classList.toggle('night', !!n);
+  document.querySelectorAll('#tabs button').forEach(b => {
+    b.classList.toggle('on', !n && b.dataset.tab === tab);
+  });
+  renderBar();
+  const main = document.getElementById('main');
+  if (n) main.innerHTML = viewNight();
+  else if (tab === 'day') main.innerHTML = viewDay();
+  else if (tab === 'city') main.innerHTML = viewCity();
+  else if (tab === 'home') main.innerHTML = viewHome();
+  else main.innerHTML = viewNotes();
+}
+
+/* ───── 白天 ───── */
+function viewDay(){
+  const c = chips();
+  let h = '<div class="sec">';
+  h += '<div class="sec-h"><span class="x">今天做了什么</span><span class="y">' + c.count + ' / 7</span></div>';
   h += TASKS.map(t => {
-    const on = todayList().includes(t.id);
-    const n = state.yard[t.id] || 0;
-    return `<div class="tk ${on ? 'on' : ''} ${anim[t.id] ? 'pop' : ''}" data-act="do" data-id="${t.id}">
-      <div class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[t.icon]}</svg></div>
-      <div class="bd">
-        <div class="nm">${t.name}</div>
-        <div class="ds">${on ? t.act : t.hint}</div>
-      </div>
-      <div class="st">${on ? '已做' : (n > 0 ? '累计 ' + n : '')}</div>
-    </div>`;
+    const on = !!state.checks[t.id];
+    return '<div class="tk' + (on ? ' on' : '') + '" data-task="' + t.id + '">' +
+      '<div class="gl"><svg viewBox="0 0 24 24">' + ICONS[t.icon] + '</svg></div>' +
+      '<div class="bd"><div class="nm">' + t.name + '</div><div class="ds">' + t.desc + '</div></div>' +
+      '<div class="eff">' + (on ? '✓' : t.eff) + '</div></div>';
   }).join('');
-  h += `</div>`;
+  h += '</div>';
 
-  h += `<div class="note">
-    <b>院子不会清零。</b>断一天只影响「连着几天」，你已经垒起来的台阶、长高的树、砌上的砖，一块都不会少。<br>
-    今天只做 <b>${GOAL}</b> 件就够 —— 门槛低到最差的一天也能过。
-  </div>`;
+  h += '<div class="chips">' +
+    '<div class="chip"><div class="v">' + c.oil + '</div><div class="k">灯油</div></div>' +
+    '<div class="chip"><div class="v">' + c.nerve + '</div><div class="k">胆</div></div>' +
+    '<div class="chip"><div class="v">' + c.clue + '</div><div class="k">线索</div></div>' +
+    '<div class="chip"><div class="v">' + c.stealth + '</div><div class="k">隐蔽</div></div>' +
+    '</div>';
 
-  document.getElementById('v-yard').innerHTML = h;
-  document.getElementById('v-yard').style.display = '';
-  document.getElementById('v-exp').style.display = 'none';
-  document.getElementById('v-set').style.display = 'none';
-  anim = {};
+  h += '<div class="sec"><div class="note" style="margin:10px 2px 14px">' +
+    (c.count === 0
+      ? '什么都没做也能出门。两滴油，够走到楼下看一眼。'
+      : (c.count >= 6 ? '今天的油很足，能走得很远。' : '做几件，就能走几步。')) +
+    (state.sleptLast ? '<br>昨晚早睡，今天多了两滴。' : '') +
+    (c.clue > 0 ? '<br>线索 ' + c.clue + ' 点：入夜后能看穿一些东西。' : '') +
+    '</div>';
+  h += '<button class="btn primary" data-act="go-night">入夜</button></div>';
+
+  return h;
 }
 
-function yardChronicle(){
-  const y = state.yard;
-  const parts = [];
-  if (y.train >= 12) parts.push('树已经很成样子了');
-  else if (y.train > 0) parts.push('树刚过膝');
-  if (y.quit >= 10) parts.push('墙砌得很厚');
-  else if (y.quit > 0) parts.push('墙上添了几块新砖');
-  if (y.study >= 8) parts.push('窗台堆满了书');
-  else if (y.study > 0) parts.push('窗内有了几本书');
-  if (y.wake >= 6) parts.push('门前石阶已经很高');
-  if (y.shower >= 8) parts.push('井水快满了');
-  if (y.sleep >= 10) parts.push('屋顶补得严实');
-  if (!parts.length) return '院子还很空，等你动第一下';
-  return parts.slice(0, 2).join('，');
-}
+/* ───── 入夜 ───── */
+function viewNight(){
+  const n = state.night;
+  let h = '<div class="bar">' +
+    '<i>油 <b>' + n.oil + '</b></i>' +
+    '<i>胆 <b>' + n.nerve + '</b></i>' +
+    '<i>线索 <b>' + n.clue + '</b></i>' +
+    (n.stealth ? '<i>隐蔽 <b>' + n.stealth + '</b></i>' : '') +
+    '</div>';
 
-/* ---------------------- 远行（每周一次） ---------------------- */
-const EXP_SCENES = [
-  { tag:'一 · 出村', title:'岔路口',
-    text:'村口两条路。左边是官道，绕远，但走的人多；右边是条小径，草长得齐腰，近得多。',
-    opts:[
-      { k:'safe', label:'走官道', cost:2, ok:true,  note:'稳妥，多花些力气' },
-      { k:'risk', label:'钻小径', cost:1, ok:false, note:'省力气，未必走得通' }
-    ]},
-  { tag:'二 · 途中', title:'雨',
-    text:'半路下起雨。前面有个山洞，也有棵大树。洞里有水声，树下的路还能走。',
-    opts:[
-      { k:'safe', label:'进山洞避雨', cost:2, ok:true,  note:'等雨停，稳妥' },
-      { k:'risk', label:'冒雨赶路',   cost:1, ok:false, note:'可能着凉，也可能更快' }
-    ]},
-  { tag:'三 · 尽头', title:'旧屋',
-    text:'路的尽头有间旧屋，门虚掩着。屋里有东西，但看着没什么人住。',
-    opts:[
-      { k:'safe', label:'推门进去看看', cost:2, ok:true,  note:'拿得到，只是慢些' },
-      { k:'risk', label:'绕到屋后',     cost:1, ok:false, note:'也许有更好的，也许什么都没有' }
-    ]}
-];
+  const def = BLOCKS.find(b => b.id === n.cur);
 
-const RELIC_POOL = [
-  { name:'一枚旧铜钱', mark:'钱', color:'#a8764f', desc:'不知哪一年的，边缘磨得很滑' },
-  { name:'半块青瓦',   mark:'瓦', color:'#7d8fa0', desc:'比你家屋顶的还旧' },
-  { name:'一小截松枝', mark:'松', color:'#6f8560', desc:'还带着一点香气' },
-  { name:'一只粗陶碗', mark:'碗', color:'#b8822c', desc:'碗底有个缺口，但很结实' },
-  { name:'一张旧地图', mark:'图', color:'#8d7b5e', desc:'画的地方你都不认得' },
-  { name:'一把铜钥匙', mark:'钥', color:'#b8822c', desc:'不知道开哪扇门' },
-  { name:'一块温石头', mark:'石', color:'#7d8fa0', desc:'握久了会变暖' },
-  { name:'一枚鸟羽',   mark:'羽', color:'#6f8560', desc:'蓝得不像真的' }
-];
-
-function weekKey(){
-  const d = new Date();
-  const onejan = new Date(d.getFullYear(), 0, 1);
-  const wn = Math.ceil(((d - onejan) / 86400000 + onejan.getDay() + 1) / 7);
-  return d.getFullYear() + '-W' + wn;
-}
-/* 补给 = 最近 7 天（含今天）达成天数。用滚动窗口而不是自然周，
-   否则每周一进远行必然 0 补给、走不动。 */
-function supplyDays(){
-  let n = 0;
-  for (let i = 0; i < 7; i++){
-    const t = new Date();
-    t.setDate(t.getDate() - i);
-    if ((state.days[todayKey(t)] || []).length >= GOAL) n++;
-  }
-  return n;
-}
-function expState(){
-  const wk = weekKey();
-  if (!state.exp || state.exp.week !== wk){
-    state.exp = { week: wk, used: false, log: [] };
-    save();
-  }
-  return state.exp;
-}
-function expReady(){
-  const e = expState();
-  return !e.used && supplyDays() > 0;
-}
-
-function renderExp(){
-  const e = expState();
-  const wk = supplyDays();
-  const inProgress = e.log.length > 0 && e.log.length < EXP_SCENES.length;
-
-  let h = `<div class="sec" style="padding-top:14px">
-    <div class="sec-h"><span class="x">远行</span><span class="y">每周一次</span></div>
-    <div class="supply">
-      <span>本周补给</span><span class="v">${wk}</span><span>天</span>
-      <span class="sp-bar"><i style="width:${Math.min(100, wk / 7 * 100)}%"></i></span>
-    </div>`;
-
-  if (e.used && !inProgress){
-    h += `<div class="scene">
-      <div class="stag">本周已走完</div>
-      <div class="stt">路走完了</div>
-      <div class="stx">这周你带回了 ${e.log.filter(x => x.got).length} 段路上的东西。下周一，路会重新开。</div>
-    </div>`;
-    if (state.relics.length){
-      h += `<div class="sec-h"><span class="x">院子里摆着的东西</span></div>`;
-      h += state.relics.map(r => `<div class="relic">
-        <div class="ic">${esc(r.mark)}</div>
-        <div class="tx"><b>${esc(r.name)}</b><span>${esc(r.desc)}</span></div>
-      </div>`).join('');
-    }
-  } else if (!inProgress && wk === 0){
-    h += `<div class="empty">
-      这周还没有一天的记录。<br>
-      先在院子里做满 ${GOAL} 件事，路才会开。
-    </div>`;
-  } else {
-    const idx = inProgress ? e.log.length : 0;
-    const sc = EXP_SCENES[idx];
-    const used = e.log.reduce((s, x) => s + (x.cost || 0), 0);
-    const supply = wk - used;
-
-    h += `<div class="scene">
-      <div class="stag">${sc.tag}</div>
-      <div class="stt">${sc.title}</div>
-      <div class="stx">${sc.text}</div>`;
-    sc.opts.forEach((o, i) => {
-      const afford = supply >= o.cost;
-      h += `<button class="opt ${o.k === 'safe' ? 'good' : 'risky'}" data-act="exp-opt" data-i="${i}" ${afford ? '' : 'disabled'}>
-        ${o.label}
-        <span class="cost">${o.note} · 消耗补给 ${o.cost}${afford ? '' : '（不够）'}</span>
-      </button>`;
+  if (n.pendingMove){
+    const nb = neighbors(n.cur);
+    h += '<div class="nightwrap"><div class="scene">' +
+      '<p>' + def.name + '。' + def.desc + '</p>' +
+      '<p class="dim">你可以换个地方，也可以回去。</p></div>';
+    nb.forEach(id => {
+      const bd = BLOCKS.find(x => x.id === id);
+      const st = state.city[id];
+      h += '<button class="opt" data-move="' + id + '">' +
+        '<span class="lb">去' + bd.name + '</span>' +
+        '<span class="cost">耗 <b>1</b> 滴油 · 已经走过 ' + st.visits + ' 次 · ' +
+        (st.drained >= 3 ? '基本被捡空了' : '还有点东西') + '</span></button>';
     });
-    h += `</div>`;
-
-    h += inProgress
-      ? `<div class="note">已经走过 ${e.log.length} 段，还剩 ${EXP_SCENES.length - e.log.length} 段。</div>
-         <button class="btn ghost" data-act="exp-back" style="margin-bottom:8px">往回走，这周就到这</button>`
-      : `<div class="note">走完三段，会带回一件院子里的东西。补给不够也走不到终点，但院子不会因此少一块砖。</div>`;
+    h += '<button class="opt" data-act="end-home"><span class="lb">回家</span>' +
+      '<span class="cost">结束今晚，带走全部</span></button>';
+    h += '</div>';
+    return h;
   }
 
-  h += `</div>`;
+  const node = n.node || { t:'', o:[] };
+  h += '<div class="nightwrap"><div class="scene">' +
+    '<p class="dim" style="font-size:12.5px;margin-bottom:12px">' + def.name + ' · 第 ' + (n.steps+1) + ' 步</p>' +
+    '<p>' + node.t + '</p></div>';
 
-  document.getElementById('v-exp').innerHTML = h;
-  document.getElementById('v-exp').style.display = '';
-  document.getElementById('v-yard').style.display = 'none';
-  document.getElementById('v-set').style.display = 'none';
+  node.o.forEach((o, i) => {
+    const ok = canAfford(o);
+    const cst = [];
+    if (o.cost && o.cost.oil) cst.push('油 −' + o.cost.oil);
+    if (o.cost && o.cost.nerve) cst.push('胆 −' + o.cost.nerve);
+    if (o.cost && o.cost.clue) cst.push('线索 −' + o.cost.clue);
+    if (!cst.length) cst.push('不耗');
+    const gain = o.gain ? Object.keys(o.gain).map(k => MATS[k].name + '+' + o.gain[k]).join(' ') : '';
+    h += '<button class="opt' + (ok ? '' : ' locked') + '" data-opt="' + i + '"' + (ok ? '' : ' disabled') + '>' +
+      '<span class="lb">' + o.lb + '</span>' +
+      '<span class="cost">' + cst.join(' · ') + (gain ? ' · <b>' + gain + '</b>' : '') +
+      (ok ? '' : ' · <b>不够</b>') + '</span></button>';
+  });
+
+  h += '<button class="opt" data-act="end-home" style="border-style:dashed">' +
+    '<span class="lb">回家</span><span class="cost">结束今晚，带走全部</span></button>';
+  h += '</div>';
+  return h;
 }
 
-function expChoose(i){
-  const e = expState();
-  const idx = e.log.length;
-  const sc = EXP_SCENES[idx];
-  if (!sc || !sc.opts[i]) return;
-  const o = sc.opts[i];
-  const wk = supplyDays();
-  const used = e.log.reduce((s, x) => s + (x.cost || 0), 0);
-  const supply = wk - used;
-  if (supply < o.cost){ toast('补给不够，走不动了'); return; }
-
-  let got;
-  if (o.ok){
-    got = true;
-  } else {
-    const chance = Math.min(0.85, 0.38 + supply * 0.07);
-    got = Math.random() < chance;
-  }
-  e.log.push({ k: o.k, cost: o.cost, got });
-
-  if (e.log.length >= EXP_SCENES.length){
-    e.used = true;
-    const wins = e.log.filter(x => x.got).length;
-    if (wins >= 2){
-      const have = new Set(state.relics.map(r => r.name));
-      const pool = RELIC_POOL.filter(r => !have.has(r.name));
-      const rel = pool.length ? pick(pool) : pick(RELIC_POOL);
-      state.relics.push({ name: rel.name, mark: rel.mark, color: rel.color, desc: rel.desc, date: todayKey() });
-      toast(`带回「${rel.name}」`);
-      if (state.sound) sfx('up');
-    } else {
-      toast('这趟空手而归，下周再来');
-      if (state.sound) sfx('low');
+/* ───── 城市 ───── */
+function viewCity(){
+  const litCnt = Object.keys(state.city).filter(id => state.city[id].lit >= 3).length;
+  let h = '<div class="mapwrap">';
+  h += '<div class="sec-h"><span class="x">这座城</span><span class="y">已点亮 ' + litCnt + ' / 12</span></div>';
+  h += '<div class="citygrid">';
+  BLOCKS.forEach(b => {
+    const st = state.city[b.id];
+    const un = isUnlocked(b);
+    if (!un){
+      h += '<div class="blk unk"><div class="nm">？？？</div><div class="mt"><span>还没走到过</span></div></div>';
+      return;
     }
-  } else {
-    toast(got ? '走通了' : '没走通，退回来了');
-    if (state.sound) sfx(got ? 'ok' : 'low');
-  }
-  save();
-  renderExp();
+    const dots = [0,1,2].map(i => '<div class="dot' + (st.lit > i ? ' f' : '') + '"></div>').join('');
+    const drained = st.drained >= 4 ? '空' : (st.drained >= 2 ? '少了' : '还有');
+    h += '<div class="blk' + (st.lit>=3?' lit3':'') + '">' +
+      '<div class="nm">' + b.name + '</div>' +
+      '<div class="mt"><span>走过 ' + st.visits + '</span><span>' + drained + '</span></div>' +
+      '<div class="dots">' + dots + '</div></div>';
+  });
+  h += '</div>';
+  h += '<div class="note" style="margin:14px 2px 20px">' +
+    '走过的路会变穷，也会变安全。<br>同一个地方走太多次，它会开始记住你。</div>';
+  h += '</div>';
+  return h;
 }
 
-/* 半途折返：补给不够时的出口，避免这一周卡死走不出去 */
-function expBack(){
-  const e = expState();
-  if (!e.log.length || e.used) return;
-  e.used = true;
-  save();
-  renderExp();
-  toast('折返了。这周的路就走到这');
-  if (state.sound) sfx('low');
-}
+/* ───── 安全屋 ───── */
+function viewHome(){
+  let h = '<div class="sec"><div class="sec-h"><span class="x">材料</span><span class="y">从夜里带回来的</span></div></div>';
+  h += '<div class="mat-inv">' + Object.keys(MATS).map(k =>
+    '<div><div class="v">' + (state.mats[k]||0) + '</div><div class="k">' + MATS[k].name + '</div></div>'
+  ).join('') + '</div>';
 
-/* ---------------------- 其他 / 设置 ---------------------- */
-function renderSet(){
-  const total = Object.values(state.yard).reduce((a, b) => a + b, 0);
-  let h = `<div class="sec" style="padding-top:14px">
-    <div class="sec-h"><span class="x">这院子</span></div>
-  </div>
-  <div class="stat-grid">
-    <div class="stat"><div class="v">${state.totalMet}</div><div class="k">达成天数</div></div>
-    <div class="stat"><div class="v">${state.bestStreak}</div><div class="k">最长连着</div></div>
-    <div class="stat"><div class="v">${total}</div><div class="k">做过的事</div></div>
-  </div>`;
-
-  h += `<div class="sec">`;
-
-  h += `<div class="set-row">
-    <div class="lb"><div class="t2">音效</div><div class="d2">打卡和远行时的一点声音</div></div>
-    <button class="sw ${state.sound ? 'on' : ''}" data-act="toggle-sound" aria-label="音效开关"><i></i></button>
-  </div>`;
-
-  h += `<div class="sec-h"><span class="x">七件事的进度</span></div>`;
-  h += TASKS.map(t => {
-    const n = state.yard[t.id] || 0;
-    return `<div class="set-row">
-      <div class="lb"><div class="t2">${t.name}</div><div class="d2">${t.act}</div></div>
-      <div style="font-size:14px;color:var(--amber);font-weight:600">${n}</div>
-    </div>`;
+  h += '<div class="sec"><div class="sec-h"><span class="x">能修的东西</span><span class="y">最高 3 级</span></div>';
+  h += BUILDS.map(d => {
+    const lv = state.build[d.id];
+    const cost = buildCost(d);
+    const can = cost && (state.mats[cost.mat]||0) >= cost.n;
+    const lvBar = [0,1,2].map(i => '<i class="' + (lv > i ? 'f' : '') + '"></i>').join('');
+    return '<div class="bd-row">' +
+      '<div class="ic"><svg viewBox="0 0 24 24">' + ICONS[d.icon] + '</svg></div>' +
+      '<div class="bd"><div class="nm">' + d.name + '</div>' +
+      '<div class="ds">' + (lv > 0 ? d.desc[lv-1] : '还没修') + '</div>' +
+      '<div class="lv">' + lvBar + '</div></div>' +
+      (cost
+        ? '<button data-build="' + d.id + '" class="' + (can?'can':'') + '"' + (can?'':' disabled') + '>' +
+          MATS[cost.mat].name + ' ' + cost.n + '</button>'
+        : '<button disabled>满了</button>') +
+      '</div>';
   }).join('');
-
-  h += `<div class="sec-h"><span class="x">数据</span></div>
-  <div class="note" style="margin:0 0 10px">数据只存在这台手机里。清缓存或删主屏图标会丢，记得隔段时间导出一份。</div>
-  <button class="btn ghost" data-act="export" style="margin-bottom:8px">导出数据</button>
-  <button class="btn ghost" data-act="import" style="margin-bottom:8px">导入数据</button>
-  <button class="btn ghost" data-act="reset" style="color:#a35b46;border-color:#d6b5a6;margin-bottom:10px">清空全部</button>
-  <button class="btn ghost" data-act="force-update" style="margin-bottom:6px">检查更新</button>
-  <div style="text-align:center;font-size:12px;color:var(--ink3);padding:6px 0 20px">院子 ${APP_VER}</div>`;
-
-  h += `</div>`;
-
-  document.getElementById('v-set').innerHTML = h;
-  document.getElementById('v-set').style.display = '';
-  document.getElementById('v-yard').style.display = 'none';
-  document.getElementById('v-exp').style.display = 'none';
+  h += '</div>';
+  return h;
 }
 
-/* ---------------------- 弹层 ---------------------- */
+/* ───── 笔记 ───── */
+function viewNotes(){
+  let h = '<div class="sec"><div class="sec-h"><span class="x">留在这里的话</span><span class="y">第 ' + state.walker.gen + ' 个人</span></div>';
+  h += '<div class="note" style="margin:0 2px 14px">' +
+    '做过 ' + state.stats.nights + ' 个晚上，走了 ' + (state.stats.totalSteps||0) + ' 步。' +
+    (state.stats.deaths ? '<br>有 ' + state.stats.deaths + ' 个人没能回来。' : '') + '</div>';
+
+  if (!state.notes.length){
+    h += '<div class="notes-item"><div class="who">还没有</div>还没人在这里留下过话。</div>';
+  } else {
+    h += state.notes.slice().reverse().map(n =>
+      '<div class="notes-item"><div class="who">' + n.who + '</div>' + n.text + '</div>'
+    ).join('');
+  }
+  h += '</div>';
+
+  h += '<div class="sec" style="margin-top:20px">' +
+    '<button class="btn ghost" data-act="export" style="margin-bottom:9px">导出数据</button>' +
+    '<button class="btn ghost" data-act="import" style="margin-bottom:9px">导入数据</button>' +
+    '<button class="btn ghost danger" data-act="reset">清空全部</button>' +
+    '<div style="text-align:center;font-size:11.5px;color:var(--ink3);padding:14px 0 8px">夜行 ' + APP_VER + '</div>' +
+    '</div>';
+  return h;
+}
+
+/* ══════════════ 弹层 ══════════════ */
 function openSheet(html){
   document.getElementById('sheet-in').innerHTML = html;
   document.getElementById('sheet').classList.add('on');
@@ -950,119 +1081,6 @@ function openSheet(html){
 function closeSheet(){
   document.getElementById('sheet').classList.remove('on');
 }
-
-/* ---------------------- 打卡 ---------------------- */
-function doTask(id){
-  const tk = TASKS.find(t => t.id === id);
-  if (!tk) return;
-  if (todayList().includes(id)){ toast('这件今天已经做过了'); return; }
-  const before = todayCount();
-  doneTask(id);
-  const after = todayCount();
-  anim[id] = true;
-  render();
-
-  if (after >= GOAL && before < GOAL){
-    const names = TASKS.filter(t => todayList().includes(t.id)).map(t => t.name).join('、');
-    openSheet(`<div class="h">今天够了</div>
-      <div class="sub">你做了 ${after} 件：${names}。</div>
-      <div class="note" style="margin:0 0 14px">院子往前走了一步。${state.streak > 1 ? '连着 ' + state.streak + ' 天了。' : ''}</div>
-      <button class="btn" data-act="close">知道了</button>`);
-    if (state.sound) sfx('up');
-  } else {
-    toast(tk.act);
-    if (state.sound) sfx('ok');
-  }
-}
-
-/* ---------------------- 音效（实时合成） ---------------------- */
-let AC = null;
-function sfx(kind){
-  try {
-    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-    if (AC.state === 'suspended') AC.resume();
-    const now = AC.currentTime;
-    const notes = kind === 'up' ? [523.25, 659.25, 783.99]
-                : kind === 'ok' ? [587.33, 783.99]
-                : [392.00, 311.13];
-    notes.forEach((f, i) => {
-      const o = AC.createOscillator(), g = AC.createGain();
-      o.type = 'sine';
-      o.frequency.value = f;
-      const t0 = now + i * 0.075;
-      g.gain.setValueAtTime(0, t0);
-      g.gain.linearRampToValueAtTime(0.075, t0 + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0006, t0 + 0.34);
-      o.connect(g); g.connect(AC.destination);
-      o.start(t0); o.stop(t0 + 0.36);
-    });
-  } catch(e){}
-}
-
-/* ---------------------- 导出 / 导入 ---------------------- */
-function showExport(){
-  openSheet(`<div class="h">导出数据</div>
-    <div class="sub">复制下面全部内容，存到备忘录或发给自己。</div>
-    <textarea id="exp-ta" readonly>${esc(JSON.stringify(state))}</textarea>
-    <button class="btn" data-act="copy" style="margin-top:10px">复制</button>
-    <button class="btn ghost" data-act="close" style="margin-top:8px">关闭</button>`);
-}
-function showImport(){
-  openSheet(`<div class="h">导入数据</div>
-    <div class="sub">粘贴之前导出的内容。会覆盖当前记录。</div>
-    <textarea id="imp-ta" placeholder="粘贴 JSON……"></textarea>
-    <button class="btn" data-act="do-import" style="margin-top:10px">导入</button>
-    <button class="btn ghost" data-act="close" style="margin-top:8px">取消</button>`);
-}
-function doImport(){
-  const ta = document.getElementById('imp-ta');
-  if (!ta) return;
-  try {
-    const o = JSON.parse(ta.value.trim());
-    if (!o || typeof o !== 'object') throw new Error('bad');
-    state = Object.assign(blankState(), o);
-    state.yard = Object.assign(blankState().yard, o.yard || {});
-    state.exp  = Object.assign(blankState().exp, o.exp || {});
-    if (!Array.isArray(state.relics)) state.relics = [];
-    save(); closeSheet(); render(); toast('已导入');
-  } catch(e){ toast('格式不对'); }
-}
-
-/* ---------------------- 头部 ---------------------- */
-function renderHeader(){
-  const c = todayCount(), m = todayMet();
-  document.getElementById('hd-num').innerHTML = `${Math.min(c, GOAL)}<i>/${GOAL}</i>`;
-  const d = new Date();
-  document.getElementById('hd-date').textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日';
-  const start = state.createdAt || todayKey();
-  const n = Math.max(1, dayDiff(start, todayKey()) + 1);
-  const s = state.streak > 0 ? ` · 连着 ${state.streak} 天` : '';
-  document.getElementById('hd-sub').textContent = `第 ${n} 天${s}`;
-  document.getElementById('hd-num').style.color = m ? 'var(--moss)' : 'var(--amber)';
-}
-
-/* ---------------------- 渲染调度 ---------------------- */
-function render(){
-  renderHeader();
-  if (view === 'yard') renderYard();
-  else if (view === 'exp') renderExp();
-  else renderSet();
-  Array.prototype.forEach.call(document.querySelectorAll('#tabs .tb'), b => {
-    b.classList.toggle('on', b.dataset.t === view);
-  });
-  updateBadge();
-}
-
-function updateBadge(){
-  try {
-    if (!('setAppBadge' in navigator)) return;
-    const left = Math.max(0, GOAL - todayCount());
-    if (left > 0) navigator.setAppBadge(left);
-    else navigator.clearAppBadge();
-  } catch(e){}
-}
-
-/* ---------------------- toast ---------------------- */
 let toastT = null;
 function toast(msg){
   const el = document.getElementById('toast');
@@ -1072,77 +1090,107 @@ function toast(msg){
   toastT = setTimeout(() => el.classList.remove('on'), 1900);
 }
 
-/* ---------------------- 事件绑定 ---------------------- */
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-act]');
-  if (!b){
-    if (e.target.id === 'sheet') closeSheet();
-    return;
-  }
-  const act = b.dataset.act;
+/* ══════════════ 选择出发地 ══════════════ */
+function chooseStart(){
+  const list = unlockedList();
+  let h = '<h3>今晚去哪</h3><div class="body">灯油 ' + chips().oil + ' 滴。每走一步烧一滴。</div>';
+  list.forEach(b => {
+    const st = state.city[b.id];
+    h += '<button class="opt" data-start="' + b.id + '">' +
+      '<span class="lb">' + b.name + '</span>' +
+      '<span class="cost">' + b.desc + ' · 去过 ' + st.visits + ' 次</span></button>';
+  });
+  openSheet(h);
+}
 
-  if (act === 'tab'){
-    view = b.dataset.t;
+/* ══════════════ 事件 ══════════════ */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-task],[data-opt],[data-move],[data-start],[data-build],[data-act],[data-tab]');
+  if (!t) return;
+
+  if (t.dataset.tab){
+    if (state.night){ toast('天还没亮'); return; }
+    tab = t.dataset.tab;
     render();
-    try { window.scrollTo(0, 0); } catch(err){}
     return;
   }
-  if (act === 'do'){ doTask(b.dataset.id); return; }
-  if (act === 'close'){ closeSheet(); return; }
-  if (act === 'exp-opt'){ expChoose(+b.dataset.i); return; }
-  if (act === 'exp-back'){ expBack(); return; }
-  if (act === 'toggle-sound'){ state.sound = !state.sound; save(); renderSet(); return; }
-  if (act === 'export'){ showExport(); return; }
-  if (act === 'import'){ showImport(); return; }
-  if (act === 'copy'){
-    const ta = document.getElementById('exp-ta');
-    if (ta){
-      ta.select();
-      try { ta.setSelectionRange(0, 999999); } catch(err){}
-      try { document.execCommand('copy'); toast('已复制'); }
-      catch(err){ toast('请长按手动复制'); }
+  if (t.dataset.task){
+    const id = t.dataset.task;
+    if (state.checks[id]){
+      delete state.checks[id];
+      if (id === 'sleep') state._sleptToday = false;
+    } else {
+      state.checks[id] = true;
+      if (id === 'sleep') state._sleptToday = true;
+      t.classList.add('pop');
     }
+    save();
+    render();
     return;
   }
-  if (act === 'do-import'){ doImport(); return; }
-  if (act === 'force-update'){
-    if (!('serviceWorker' in navigator)){ toast('这台设备不支持自动更新'); return; }
-    toast('正在检查…');
-    navigator.serviceWorker.getRegistration().then(reg => {
-      if (!reg){ location.reload(); return; }
-      return reg.update().then(() => {
-        // 有新版本在等：让它立刻接管，controllerchange 里会自动刷新
-        if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
-        else setTimeout(() => {
-          toast('已经是最新（' + APP_VER + '）');
-        }, 900);
-      });
-    }).catch(() => location.reload());
+  if (t.dataset.start !== undefined && t.dataset.start){
+    closeSheet();
+    startNight(t.dataset.start);
+    return;
+  }
+  if (t.dataset.opt !== undefined && t.dataset.opt !== ''){
+    chooseOpt(parseInt(t.dataset.opt, 10));
+    return;
+  }
+  if (t.dataset.move){
+    moveTo(t.dataset.move);
+    return;
+  }
+  if (t.dataset.build){
+    doBuild(t.dataset.build);
+    return;
+  }
+
+  const act = t.dataset.act;
+  if (act === 'go-night'){ chooseStart(); return; }
+  if (act === 'end-home'){ endNight('home'); return; }
+  if (act === 'after-node'){ afterNode(); return; }
+  if (act === 'close-sheet'){ closeSheet(); render(); return; }
+  if (act === 'export'){
+    const data = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    openSheet('<h3>导出</h3><div class="body">复制下面这段，存到别处。</div>' +
+      '<textarea readonly style="width:100%;height:120px;font-size:11px;border-radius:9px;border:1px solid var(--line);padding:9px;background:var(--card2);color:var(--ink)">' + data + '</textarea>' +
+      '<button class="btn primary" style="margin-top:12px" data-act="close-sheet">好</button>');
+    return;
+  }
+  if (act === 'import'){
+    openSheet('<h3>导入</h3><div class="body">把之前导出的内容粘进来。</div>' +
+      '<textarea id="imp" style="width:100%;height:120px;font-size:11px;border-radius:9px;border:1px solid var(--line);padding:9px;background:var(--card2);color:var(--ink)"></textarea>' +
+      '<button class="btn primary" style="margin-top:12px" data-act="do-import">导入</button>');
+    return;
+  }
+  if (act === 'do-import'){
+    const v = document.getElementById('imp').value.trim();
+    try{
+      const o = JSON.parse(decodeURIComponent(escape(atob(v))));
+      if (!o || o.v !== 3) throw 0;
+      state = o; save(); closeSheet(); render(); toast('导入成功');
+    }catch(err){ toast('这段数据读不出来'); }
     return;
   }
   if (act === 'reset'){
-    if (confirm('清空所有记录？院子和打卡都会归零，无法恢复。')){
-      state = blankState(); save(); closeSheet(); render(); toast('已清空');
+    if (confirm('清空这个游戏？城市、建造、笔记都会没了。')){
+      state = blankState(); save(); closeSheet(); render(); toast('已经清空');
     }
     return;
   }
 });
 
-/* ---------------------- 启动 ---------------------- */
-/* SW 更新：iOS 加到主屏后几乎不会真正关闭，靠「下次打开自动检查」会一直挂旧页面。
-   这里做三件事：启动即检查、回到前台再检查、新版本接管后自动刷新一次。 */
+/* ══════════════ SW 更新 ══════════════ */
 function registerSW(){
   if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
   const hadController = !!navigator.serviceWorker.controller;
   let reloading = false;
-
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    // 首次安装不刷新；只有「旧页面被新 SW 接管」才刷新，且只刷一次
     if (!hadController || reloading) return;
     reloading = true;
     location.reload();
   });
-
   navigator.serviceWorker.register('./sw.js').then(reg => {
     reg.update().catch(() => {});
     document.addEventListener('visibilitychange', () => {
@@ -1152,17 +1200,15 @@ function registerSW(){
   }).catch(() => {});
 }
 
-let bootDay = todayKey();
-function boot(){
-  load();
-  render();
-  setInterval(() => {
-    const k = todayKey();
-    if (bootDay !== k){ bootDay = k; rollDay(); render(); }
-  }, 60000);
-  registerSW();
-}
-boot();
+/* ══════════════ 启动 ══════════════ */
+load();
+render();
+registerSW();
+
+setInterval(() => {
+  const k = todayKey();
+  if (state.date !== k){ rollDay(); render(); }
+}, 60000);
 </script>
 </body>
 </html>

@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f6f1e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="日课">
+<meta name="format-detection" content="telephone=no">
+<title>日课 · 一亩三分地</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6f1e5'/%3E%3Cpath d='M10 46h44M18 46V30l14-9 14 9v16' fill='none' stroke='%232b2b28' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='36' r='4' fill='%23b8822c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/lxgwwenkaiscreen.css">
+<style>
+:root{
+  --paper:#f6f1e5; --paper2:#efe7d6; --paper3:#e6dbc6;
+  --ink:#2b2b28; --ink2:#5c574d; --ink3:#8c8578;
+  --line:#d8cdb6; --line2:#c7b99d;
+  --amber:#b8822c; --amber-l:#d8a94f;
+  --moss:#6f8560; --clay:#b3795c;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink)}
+body{
+  font-family:"LXGW WenKai Screen","Songti SC","PingFang SC",system-ui,-apple-system,"Noto Sans SC",sans-serif;
+  font-size:16px; line-height:1.6;
+  overflow-x:hidden; max-width:100vw;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+#app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:30;
+  padding:calc(8px + env(safe-area-inset-top)) 16px 9px;
+  background:rgba(246,241,229,.94);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+}
+.hd-l .t{font-size:18px;font-weight:700;letter-spacing:.06em;line-height:1.2}
+.hd-l .s{font-size:12px;color:var(--ink3);margin-top:1px;letter-spacing:.03em}
+.hd-r{text-align:right;flex-shrink:0}
+.hd-r .n{font-size:22px;font-weight:700;color:var(--amber);line-height:1;font-variant-numeric:tabular-nums}
+.hd-r .n i{font-style:normal;font-size:13px;color:var(--ink3);font-weight:400}
+.hd-r .d{font-size:11px;color:var(--ink3);margin-top:3px;letter-spacing:.04em}
+
+/* ---------- yard ---------- */
+#yard{position:relative;background:var(--paper2);overflow:hidden}
+#yard svg{display:block;width:100%;height:auto}
+#yard .cap{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:26px 16px 9px;
+  background:linear-gradient(to top,rgba(246,241,229,.96),rgba(246,241,229,.6),transparent);
+  font-size:12.5px;color:var(--ink2);letter-spacing:.03em;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+#yard .cap b{color:var(--amber);font-weight:600}
+
+/* ---------- task cards ---------- */
+.sec{padding:0 14px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:16px 2px 9px}
+.sec-h .x{font-size:13.5px;font-weight:700;letter-spacing:.08em;color:var(--ink2)}
+.sec-h .y{font-size:11.5px;color:var(--ink3)}
+
+.tk{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 13px;margin-bottom:8px;
+  background:#fffdf7;border:1px solid var(--line);border-radius:var(--r);
+  cursor:pointer;transition:transform .12s,border-color .2s,background .2s;
+  position:relative;overflow:hidden;
+}
+.tk:active{transform:scale(.985)}
+.tk .gl{
+  width:34px;height:34px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line2);border-radius:10px;
+  background:var(--paper);color:var(--ink2);
+  transition:all .25s;
+}
+.tk .gl svg{width:18px;height:18px}
+.tk .bd{flex:1;min-width:0}
+.tk .nm{font-size:14.5px;font-weight:600;letter-spacing:.02em;line-height:1.35}
+.tk .ds{font-size:11.5px;color:var(--ink3);margin-top:1px;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk .st{font-size:11px;color:var(--ink3);flex-shrink:0;letter-spacing:.02em}
+.tk.on{background:#f2f6ec;border-color:#b9c9a8}
+.tk.on .gl{background:var(--moss);border-color:var(--moss);color:#fff}
+.tk.on .st{color:var(--moss);font-weight:600}
+.tk.on .nm{color:var(--ink2)}
+.tk.pop{animation:pop .45s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes pop{0%{transform:scale(1)}38%{transform:scale(1.035)}100%{transform:scale(1)}}
+
+/* ---------- today bar ---------- */
+.goalbar{
+  margin:8px 14px 4px;padding:11px 13px;
+  border:1px dashed var(--line2);border-radius:var(--r);
+  background:rgba(255,253,247,.6);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-size:12.5px;color:var(--ink2);
+}
+.goalbar .pips{display:flex;gap:5px;align-items:center}
+.goalbar .pip{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line2);background:transparent}
+.goalbar .pip.f{background:var(--amber);border-color:var(--amber)}
+.goalbar .txt b{color:var(--amber);font-weight:700}
+.goalbar.met{border-style:solid;border-color:#c9b98c;background:#fbf5e4}
+
+/* ---------- tabs ---------- */
+#tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;
+  background:rgba(246,241,229,.97);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+#tabs .tb{
+  flex:1;border:0;background:transparent;font-family:inherit;
+  padding:9px 4px 8px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  color:var(--ink3);font-size:10.5px;letter-spacing:.06em;
+  transition:color .2s;
+}
+#tabs .tb svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#tabs .tb.on{color:var(--amber)}
+#tabs .tb.on svg{stroke-width:2}
+main{padding-bottom:calc(72px + env(safe-area-inset-bottom));flex:1}
+
+/* ---------- generic ---------- */
+.note{
+  font-size:12px;color:var(--ink3);line-height:1.75;
+  padding:12px 14px;background:var(--paper2);border-radius:var(--r);
+  margin:10px 14px 10px;
+}
+.note b{color:var(--ink2)}
+.btn{
+  display:block;width:100%;padding:13px;border-radius:var(--r);
+  border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+  font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.06em;
+  cursor:pointer;
+}
+.btn:active{opacity:.85}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line2)}
+
+/* ---------- sheet ---------- */
+#sheet{
+  position:fixed;inset:0;z-index:80;display:none;
+  background:rgba(43,43,40,.34);
+  backdrop-filter:blur(2px);
+}
+#sheet.on{display:flex;align-items:flex-end;justify-content:center}
+#sheet .inner{
+  width:100%;max-width:560px;
+  background:var(--paper);
+  border-radius:20px 20px 0 0;
+  padding:20px 18px calc(22px + env(safe-area-inset-bottom));
+  animation:up .28s cubic-bezier(.2,.8,.2,1);
+  max-height:86vh;overflow-y:auto;
+}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+#sheet .h{font-size:19px;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
+#sheet .sub{font-size:13px;color:var(--ink3);margin-bottom:12px;line-height:1.65}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));
+  transform:translateX(-50%) translateY(8px);z-index:95;
+  background:var(--ink);color:var(--paper);
+  font-size:13px;padding:9px 16px;border-radius:20px;
+  opacity:0;transition:all .25s;pointer-events:none;
+  max-width:86%;text-align:center;letter-spacing:.02em;
+}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- expedition ---------- */
+.scene{
+  background:#fffdf7;border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 15px;margin-bottom:10px;
+}
+.scene .stag{font-size:11px;letter-spacing:.14em;color:var(--ink3);margin-bottom:7px}
+.scene .stt{font-size:16.5px;font-weight:700;letter-spacing:.03em;margin-bottom:8px}
+.scene .stx{font-size:14.5px;line-height:1.95;color:var(--ink2)}
+.opt{
+  display:block;width:100%;text-align:left;
+  padding:12px 13px;margin-top:9px;
+  border:1px solid var(--line2);border-radius:12px;
+  background:var(--paper);color:var(--ink);
+  font-family:inherit;font-size:14px;line-height:1.6;cursor:pointer;
+  transition:all .18s;
+}
+.opt:active{transform:scale(.99)}
+.opt .cost{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px}
+.opt.good{border-color:#a9bd97;background:#f3f7ee}
+.opt.risky{border-color:#d3ab6a;background:#fdf6e7}
+.opt:disabled{opacity:.42;cursor:default}
+
+.supply{
+  display:flex;align-items:center;gap:9px;margin-bottom:12px;
+  padding:10px 13px;background:var(--paper2);border-radius:var(--r);
+  font-size:12.5px;color:var(--ink2);
+}
+.supply .v{font-size:19px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums}
+.sp-bar{flex:1;height:6px;background:var(--paper3);border-radius:9px;overflow:hidden}
+.sp-bar i{display:block;height:100%;background:linear-gradient(90deg,#c9a24a,var(--amber));border-radius:9px;transition:width .4s}
+
+/* ---------- settings ---------- */
+.set-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 14px;background:#fffdf7;border:1px solid var(--line);
+  border-radius:var(--r);margin-bottom:8px;font-size:14px;
+}
+.set-row .lb{flex:1;min-width:0}
+.set-row .lb .t2{font-weight:600}
+.set-row .lb .d2{font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.5}
+.sw{width:46px;height:27px;border-radius:20px;background:var(--line2);position:relative;
+  flex-shrink:0;cursor:pointer;transition:background .22s;border:0;padding:0}
+.sw i{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:#fff;transition:transform .22s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on{background:var(--moss)}
+.sw.on i{transform:translateX(19px)}
+
+textarea{
+  width:100%;min-height:130px;padding:11px;border-radius:12px;
+  border:1px solid var(--line2);background:#fffdf7;color:var(--ink);
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+  line-height:1.6;resize:vertical;
+}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 14px 12px}
+.stat{background:#fffdf7;border:1px solid var(--line);border-radius:12px;padding:11px 9px;text-align:center}
+.stat .v{font-size:21px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;line-height:1.15}
+.stat .k{font-size:11px;color:var(--ink3);margin-top:2px;letter-spacing:.04em}
+
+.relic{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;background:#fffdf7;
+  border:1px solid var(--line);border-radius:12px;margin-bottom:7px}
+.relic .ic{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:var(--paper2);border-radius:9px;color:var(--amber);font-size:13px}
+.relic .tx{font-size:13px;line-height:1.55}
+.relic .tx b{display:block;font-size:14px;margin-bottom:1px}
+.relic .tx span{color:var(--ink3);font-size:11.5px}
+
+.empty{text-align:center;padding:26px 20px;color:var(--ink3);font-size:13px;line-height:1.8}
+@media(max-width:360px){
+  .hd-l .t{font-size:16.5px}
+  .tk{padding:11px 11px;gap:9px}
+  .tk .nm{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="hd-l">
+      <div class="t">一亩三分地</div>
+      <div class="s" id="hd-sub">第 1 天</div>
+    </div>
+    <div class="hd-r">
+      <div class="n" id="hd-num">0<i>/3</i></div>
+      <div class="d" id="hd-date"></div>
+    </div>
+  </header>
+  <main>
+    <div id="v-yard"></div>
+    <div id="v-exp"></div>
+    <div id="v-set"></div>
+  </main>
+  <nav id="tabs">
+    <button class="tb on" data-act="tab" data-t="yard">
+      <svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V10l6-4 6 4v10"/><circle cx="12" cy="14" r="1.6"/></svg>
+      <span>院子</span>
+    </button>
+    <button class="tb" data-act="tab" data-t="exp">
+      <svg viewBox="0 0 24 24"><path d="M3 18c3-1 4-6 9-6s6 5 9 6M12 12V4M9 7l3-3 3 3"/></svg>
+      <span>远行</span>
+    </button>
+    <button class="tb" data-act="tab" data-t="set">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+      <span>其他</span>
+    </button>
+  </nav>
+</div>
+<div id="sheet"><div class="inner" id="sheet-in"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ==================================================================
+   《日课 · 一亩三分地》v2
+   范式：不是「打卡赚代币去玩」，而是「打卡就是在种自己的院子」。
+   - 院子永久累积，任何情况下不清零
+   - 每日任选 3 件即算达成（门槛低于实际基线）
+   - 无惩罚：断一天只影响连击，院子一块砖都不少
+   ================================================================== */
+
+const SAVE_KEY  = 'rike_save_v1';    // 旧档（v1）兼容读取
+const SAVE_KEY2 = 'rike_yard_v2';    // 新档
+const APP_VER = 'v2.1';              // 每次发版改这里，和 sw.js 的 CACHE 一起 bump
+const GOAL = 3;                       // 每日达成门槛
+
+/* ---------------------- 七件事 → 院子里的七样东西 ---------------------- */
+const TASKS = [
+  { id:'wake',  name:'按时起床', act:'在门前多垒一级石阶', icon:'sun',
+    hint:'起身，出门，脚踩上第一级台阶' },
+  { id:'train', name:'出去锻炼', act:'院角那棵树长高一寸', icon:'tree',
+    hint:'动过之后，树会记住' },
+  { id:'shower',name:'洗个澡',   act:'井里的水涨了一寸',   icon:'well',
+    hint:'洗干净，井水会满起来' },
+  { id:'study', name:'学点东西', act:'书房窗内多一本书',   icon:'book',
+    hint:'读过的东西会堆在窗台' },
+  { id:'quit',  name:'戒断打卡', act:'院墙添一块新砖',     icon:'wall',
+    hint:'每一次忍住，墙就厚一点' },
+  { id:'read',  name:'看闲书',   act:'廊下再添一本',       icon:'lantern',
+    hint:'不为用处读书，廊下便有书' },
+  { id:'sleep', name:'准点睡觉', act:'屋顶补好一片瓦',     icon:'moon',
+    hint:'睡下，屋子才修得好' }
+];
+
+const ICONS = {
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
+  tree:'<path d="M12 21v-6"/><path d="M12 15c-3.2 0-5-1.9-5-4.4C7 8 9 6 12 6s5 2 5 4.6c0 2.5-1.8 4.4-5 4.4z"/>',
+  well:'<path d="M5 10h14M6 10l1 10h10l1-10"/><path d="M9 14c1.5.9 4.5.9 6 0"/>',
+  book:'<path d="M4 5.5C6 4 9 4 12 5.5 15 4 18 4 20 5.5V19c-2-1.5-5-1.5-8 0-3-1.5-6-1.5-8 0z"/><path d="M12 5.5V19"/>',
+  wall:'<path d="M3 8h18M3 14h18M3 20h18"/><path d="M7 8v6M15 8v6M11 14v6M19 14v6"/>',
+  lantern:'<path d="M12 3v3"/><rect x="8" y="6" width="8" height="11" rx="3"/><path d="M10 20h4"/>',
+  moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
+};
+
+/* ---------------------- 日期工具（一律本地时区，不用 toISOString） ---------------------- */
+function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+function todayKey(d){
+  const t = d || new Date();
+  return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate());
+}
+function parseDay(s){
+  const a = String(s).split('-');
+  return new Date(+a[0], +a[1] - 1, +a[2]);
+}
+function dayDiff(a, b){
+  return Math.round((parseDay(b) - parseDay(a)) / 86400000);
+}
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function pick(a){ return a[Math.floor(Math.random() * a.length)]; }
+
+/* ---------------------- 状态 ---------------------- */
+function blankState(){
+  return {
+    v: 2,
+    createdAt: todayKey(),
+    days: {},                                        // { '2026-10-19': ['wake','train'] }
+    yard: { wake:0, train:0, shower:0, study:0, quit:0, read:0, sleep:0 },
+    streak: 0,
+    bestStreak: 0,
+    totalMet: 0,
+    lastMet: null,
+    relics: [],
+    exp: { week: null, used: false, log: [] },
+    sound: true,
+    migrated: false
+  };
+}
+
+let state = blankState();
+let view = 'yard';
+let anim = {};
+
+/* ---------------------- 存储 ---------------------- */
+function save(){
+  try { localStorage.setItem(SAVE_KEY2, JSON.stringify(state)); } catch(e){}
+}
+function load(){
+  let ok = false;
+  try {
+    const raw = localStorage.getItem(SAVE_KEY2);
+    if (raw){
+      const o = JSON.parse(raw);
+      state = Object.assign(blankState(), o);
+      state.yard = Object.assign(blankState().yard, o.yard || {});
+      state.exp  = Object.assign(blankState().exp, o.exp || {});
+      if (!Array.isArray(state.relics)) state.relics = [];
+      if (!state.days || typeof state.days !== 'object') state.days = {};
+      ok = true;
+    }
+  } catch(e){}
+  if (!ok) migrateV1();
+  rollDay();
+  return ok;
+}
+
+/* 从 v1 迁移：只把「哪天做了几件」搬过来，按顺序补到前 N 项 */
+function migrateV1(){
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    if (!o || !Array.isArray(o.log)) return;
+    const order = ['wake','train','shower','study','quit','read','sleep'];
+    let n = 0;
+    o.log.forEach(item => {
+      if (!item || !item.date) return;
+      const c = Math.max(0, Math.min(7, item.n || 0));
+      if (!c) return;
+      const done = order.slice(0, c);
+      state.days[item.date] = done;
+      done.forEach(k => { state.yard[k] = (state.yard[k] || 0) + 1; });
+      n++;
+    });
+    if (n){
+      state.migrated = true;
+      state.createdAt = o.createdAt || state.createdAt;
+      state.streak = o.streak || 0;
+      state.bestStreak = o.bestStreak || o.streak || 0;
+      state.totalMet = o.totalFull || 0;
+      save();
+    }
+  } catch(e){}
+}
+
+/* ---------------------- 今日 ---------------------- */
+function todayList(){
+  const d = state.days[todayKey()];
+  return Array.isArray(d) ? d : [];
+}
+function todayCount(){ return todayList().length; }
+function todayMet(){ return todayCount() >= GOAL; }
+
+function doneTask(id){
+  const k = todayKey();
+  if (!Array.isArray(state.days[k])) state.days[k] = [];
+  if (state.days[k].includes(id)) return false;
+  state.days[k].push(id);
+  state.yard[id] = (state.yard[id] || 0) + 1;
+
+  if (state.days[k].length === GOAL){
+    state.totalMet++;
+    const prev = prevMetDate(k);
+    state.lastMet = k;
+    state.streak = (prev && dayDiff(prev, k) <= 1) ? state.streak + 1 : 1;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+  }
+  save();
+  return true;
+}
+function prevMetDate(k){
+  const keys = Object.keys(state.days)
+    .filter(d => d < k && (state.days[d] || []).length >= GOAL)
+    .sort();
+  return keys.length ? keys[keys.length - 1] : null;
+}
+function rollDay(){
+  const k = todayKey();
+  if (state.lastMet && dayDiff(state.lastMet, k) > 1 && state.streak !== 0){
+    state.streak = 0;
+    save();
+  }
+  const cut = new Date(); cut.setDate(cut.getDate() - 120);
+  const ck = todayKey(cut);
+  let changed = false;
+  Object.keys(state.days).forEach(d => {
+    if (d < ck){ delete state.days[d]; changed = true; }
+  });
+  if (changed) save();
+}
+
+/* ---------------------- 院子绘制 ---------------------- */
+function yardParams(){
+  const y = state.yard;
+  return {
+    steps:  Math.min(10, y.wake),
+    treeH:  26 + Math.min(96, y.train * 7),
+    treeW:  18 + Math.min(54, y.train * 4),
+    water:  Math.min(1, y.shower / 12),
+    books:  Math.min(12, y.study),
+    bricks: Math.min(18, y.quit),
+    porch:  Math.min(8, y.read),
+    tiles:  Math.min(1, y.sleep / 12),
+    met:    todayMet()
+  };
+}
+
+function svgYard(){
+  const p = yardParams();
+  const lit = p.met;
+  const skyTop = lit ? '#fdf3dc' : '#f7f2e6';
+  const skyBot = lit ? '#f8e9c9' : '#efe6d2';
+
+  /* 树 */
+  const cx = 62, base = 322;
+  const th = p.treeH, tw = p.treeW;
+  let tree = `<path d="M${cx} ${base} L${cx} ${base - th * 0.5}" stroke="#7a6a52" stroke-width="${(3 + Math.min(4, th / 40)).toFixed(1)}" stroke-linecap="round" fill="none"/>`;
+  if (th > 30)
+    tree += `<ellipse cx="${cx}" cy="${base - th * 0.55}" rx="${tw}" ry="${tw * 0.72}" fill="#7f9368" opacity=".92"/>`;
+  if (th > 52){
+    tree += `<ellipse cx="${(cx - tw * 0.42).toFixed(1)}" cy="${(base - th * 0.72).toFixed(1)}" rx="${(tw * 0.66).toFixed(1)}" ry="${(tw * 0.56).toFixed(1)}" fill="#8ea278" opacity=".9"/>`;
+    tree += `<ellipse cx="${(cx + tw * 0.40).toFixed(1)}" cy="${(base - th * 0.70).toFixed(1)}" rx="${(tw * 0.62).toFixed(1)}" ry="${(tw * 0.52).toFixed(1)}" fill="#728a5d" opacity=".9"/>`;
+  }
+  if (th > 78)
+    tree += `<ellipse cx="${cx}" cy="${(base - th * 0.86).toFixed(1)}" rx="${(tw * 0.72).toFixed(1)}" ry="${(tw * 0.58).toFixed(1)}" fill="#93a87c" opacity=".88"/>`;
+
+  /* 石阶 */
+  let steps = '';
+  for (let i = 0; i < p.steps; i++){
+    const w = 66 - i * 3.4;
+    const y = 392 - i * 5;
+    steps += `<rect x="${(180 - w / 2).toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="5.5" rx="1.6" fill="#cbb99c" stroke="#b9a684" stroke-width=".7" opacity="${(0.55 + i * 0.045).toFixed(2)}"/>`;
+  }
+
+  /* 墙砖 */
+  let bricks = '';
+  for (let i = 0; i < p.bricks; i++){
+    const row = Math.floor(i / 6), col = i % 6;
+    bricks += `<rect x="${296 - col * 15}" y="${246 + row * 9}" width="13" height="7.4" rx="1.2" fill="#c2a98a" opacity=".85" stroke="#ac9273" stroke-width=".6"/>`;
+  }
+
+  /* 井水 */
+  const well = p.water > 0.02
+    ? `<ellipse cx="292" cy="${(408 - p.water * 14).toFixed(1)}" rx="18" ry="5.5" fill="#8fa7ad" opacity=".62"/>
+       <ellipse cx="292" cy="${(406 - p.water * 14).toFixed(1)}" rx="16" ry="4.6" fill="#a9c0c4" opacity=".52"/>`
+    : '';
+
+  /* 窗内书 */
+  let books = '';
+  for (let i = 0; i < p.books; i++){
+    const col = Math.floor(i / 4), row = i % 4;
+    const c = ['#b8822c', '#8d9a74', '#a8764f', '#7d8fa0'][i % 4];
+    books += `<rect x="${196 + col * 7}" y="${300 - row * 6}" width="5.6" height="5" rx=".8" fill="${c}" opacity=".9"/>`;
+  }
+
+  /* 廊下书 */
+  let porch = '';
+  for (let i = 0; i < p.porch; i++){
+    const x = 236 + i * 5.2, y = 366 - i * 1.4;
+    porch += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="4.6" height="9" rx=".8" fill="#a3906f" opacity=".85" transform="rotate(${i % 2 ? 8 : -6} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
+  }
+
+  /* 屋顶缺瓦 */
+  let holes = '';
+  const hn = Math.round((1 - p.tiles) * 6);
+  for (let i = 0; i < hn; i++){
+    holes += `<path d="M${158 + i * 17} 268 l9 -1 l-2 8 z" fill="#e0d4bd" opacity=".95"/>`;
+  }
+
+  /* 灯 */
+  const lamp = lit
+    ? `<g>
+         <circle cx="143" cy="330" r="26" fill="#e8b64f" opacity=".16"/>
+         <circle cx="143" cy="330" r="15" fill="#e8b64f" opacity=".26"/>
+         <path d="M143 316 v-6" stroke="#8b7a5e" stroke-width="1.6"/>
+         <path d="M136 316 h14 l-2 15 h-10 z" fill="#e3ae43" opacity=".95"/>
+         <circle cx="143" cy="324" r="2.6" fill="#fff3d0"/>
+       </g>`
+    : `<g opacity=".42">
+         <path d="M143 316 v-6" stroke="#9a8b72" stroke-width="1.6"/>
+         <path d="M136 316 h14 l-2 15 h-10 z" fill="#cdbfa6"/>
+       </g>`;
+
+  const relics = state.relics.slice(0, 4).map((r, i) =>
+    `<g transform="translate(${16 + i * 22},246)">
+       <rect x="0" y="0" width="17" height="17" rx="3" fill="#fffdf7" stroke="${r.color || '#b8822c'}" stroke-width="1.2"/>
+       <text x="8.5" y="12.6" font-size="9" text-anchor="middle" fill="${r.color || '#b8822c'}">${esc(r.mark || '◇')}</text>
+     </g>`).join('');
+
+  return `<svg viewBox="0 60 360 360" preserveAspectRatio="xMidYMid meet" aria-label="我的院子">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${skyTop}"/><stop offset="1" stop-color="${skyBot}"/>
+    </linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#f2c96e" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#f2c96e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="360" height="430" fill="url(#sky)"/>
+  ${lit
+    ? `<circle cx="300" cy="92" r="58" fill="url(#sun)"/><circle cx="300" cy="92" r="19" fill="#f0c467" opacity=".75"/>`
+    : `<circle cx="300" cy="92" r="30" fill="#e9dfc6" opacity=".7"/>`}
+
+  <path d="M0 214 Q52 176 104 208 Q140 230 178 206 Q226 176 272 210 Q316 240 360 208 L360 260 L0 260 Z" fill="#ddd2ba" opacity=".62"/>
+  <path d="M0 236 Q60 208 118 232 Q168 252 214 230 Q268 206 320 236 Q344 250 360 240 L360 282 L0 282 Z" fill="#cfc2a7" opacity=".55"/>
+
+  <rect x="0" y="300" width="360" height="130" fill="#ddd0b4"/>
+  <path d="M0 300 Q90 292 180 302 Q272 312 360 298 L360 316 L0 316 Z" fill="#d5c7a8"/>
+  <path d="M168 430 Q176 380 180 340 L206 340 Q204 384 216 430 Z" fill="#e2d6bd" opacity=".85"/>
+
+  <rect x="0" y="238" width="360" height="70" fill="#e3d7bf"/>
+  <g opacity=".22" stroke="#b9a684" stroke-width=".7">
+    <path d="M0 256 h360 M0 274 h360 M0 292 h360"/>
+    <path d="M40 238 v18 M120 238 v18 M200 238 v18 M280 238 v18 M0 256 v18 M80 256 v18 M160 256 v18 M240 256 v18 M320 256 v18 M40 274 v18 M120 274 v18 M200 274 v18 M280 274 v18"/>
+  </g>
+  <rect x="0" y="232" width="360" height="9" rx="2" fill="#b9a684"/>
+  ${bricks}
+
+  <rect x="122" y="288" width="118" height="86" fill="#f4ecdb" stroke="#c9b89a" stroke-width="1.2"/>
+  <path d="M112 288 L181 250 L250 288 Z" fill="#b99a78" stroke="#a4855f" stroke-width="1.3"/>
+  <g stroke="#9c7c56" stroke-width=".8" fill="none" opacity=".45">
+    <path d="M129 280 L181 258 L233 280"/>
+    <path d="M143 286 L181 264 L219 286"/>
+    <path d="M157 290 L181 271 L205 290"/>
+  </g>
+  ${holes}
+  <path d="M112 288 L181 250 L250 288" fill="none" stroke="#9c7c56" stroke-width="2.4" stroke-linejoin="round"/>
+  <rect x="166" y="316" width="34" height="58" rx="2" fill="#8b6f50" stroke="#75593c" stroke-width="1.2"/>
+  <path d="M183 316 v58" stroke="#6a4f35" stroke-width="1"/>
+  <circle cx="190" cy="346" r="1.7" fill="#d9b45f"/>
+  <rect x="192" y="298" width="30" height="26" rx="2" fill="#f7efd9" stroke="#a4855f" stroke-width="1.3"/>
+  <path d="M207 298 v26 M192 311 h30" stroke="#b99a78" stroke-width="1.1"/>
+  ${books}
+
+  <path d="M228 376 h56 l-4 6 h-48 z" fill="#c9b394" stroke="#b09a7a" stroke-width="1"/>
+  <path d="M234 382 v14 M278 382 v14" stroke="#b09a7a" stroke-width="2"/>
+  ${porch}
+
+  ${tree}
+
+  <ellipse cx="292" cy="410" rx="23" ry="9" fill="#c4b295" stroke="#ab9778" stroke-width="1.2"/>
+  <ellipse cx="292" cy="406" rx="17" ry="6.4" fill="#7d6d54"/>
+  ${well}
+  <path d="M272 404 v-14 M312 404 v-14 M272 390 h40" stroke="#a89372" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M292 390 v10" stroke="#8d7b5e" stroke-width="1.2"/>
+
+  ${lamp}
+  ${steps}
+
+  <!-- 前景：草与石 -->
+  <g opacity=".62" stroke="#8a9a72" stroke-width="1.6" fill="none" stroke-linecap="round">
+    <path d="M20 412 q3 -12 6 0 M30 414 q2 -10 5 0 M56 410 q3 -13 6 0 M66 414 q2 -9 5 0"/>
+    <path d="M324 412 q3 -12 6 0 M336 414 q2 -10 5 0 M348 410 q3 -12 6 0"/>
+  </g>
+  <g fill="#c6b89c" opacity=".85">
+    <ellipse cx="110" cy="404" rx="3.2" ry="1.8"/>
+    <ellipse cx="120" cy="412" rx="2.2" ry="1.3"/>
+    <ellipse cx="252" cy="408" rx="2.8" ry="1.6"/>
+    <ellipse cx="262" cy="415" rx="2" ry="1.2"/>
+    <ellipse cx="88" cy="416" rx="2.4" ry="1.4"/>
+  </g>
+  <g stroke="#bcae92" stroke-width="1" fill="none" opacity=".5">
+    <path d="M96 400 q8 -3 16 0 M240 404 q9 -3 17 0"/>
+  </g>
+
+  ${relics}
+  ${lit ? `<rect width="360" height="430" fill="#e8b64f" opacity=".045"/>` : ''}
+  </svg>`;
+}
+
+/* ---------------------- 院子视图 ---------------------- */
+function renderYard(){
+  const c = todayCount(), m = todayMet();
+  const chronicle = yardChronicle();
+
+  let h = '';
+  if (state.migrated){
+    h += `<div class="note" style="margin-top:10px">之前那些天的记录，已经搬进院子里了 —— 你现在看到的，都是你自己垒起来的。</div>`;
+    state.migrated = false;
+    save();
+  }
+
+  h += `<div id="yard">${svgYard()}
+    <div class="cap">
+      <span>${chronicle}</span>
+      <span><b>${m ? '今日已达成' : '还差 ' + Math.max(0, GOAL - c) + ' 件'}</b></span>
+    </div>
+  </div>`;
+
+  h += `<div class="goalbar ${m ? 'met' : ''}">
+    <div class="txt">${m
+      ? '今日达成 · 院子里多了一点东西'
+      : '今天做满 <b>' + GOAL + '</b> 件，院子就往前走一步'}</div>
+    <div class="pips">${[0, 1, 2].map(i => `<span class="pip ${i < c ? 'f' : ''}"></span>`).join('')}</div>
+  </div>`;
+
+  h += `<div class="sec">
+    <div class="sec-h"><span class="x">今日七件事</span><span class="y">任选三件即可</span></div>`;
+  h += TASKS.map(t => {
+    const on = todayList().includes(t.id);
+    const n = state.yard[t.id] || 0;
+    return `<div class="tk ${on ? 'on' : ''} ${anim[t.id] ? 'pop' : ''}" data-act="do" data-id="${t.id}">
+      <div class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[t.icon]}</svg></div>
+      <div class="bd">
+        <div class="nm">${t.name}</div>
+        <div class="ds">${on ? t.act : t.hint}</div>
+      </div>
+      <div class="st">${on ? '已做' : (n > 0 ? '累计 ' + n : '')}</div>
+    </div>`;
+  }).join('');
+  h += `</div>`;
+
+  h += `<div class="note">
+    <b>院子不会清零。</b>断一天只影响「连着几天」，你已经垒起来的台阶、长高的树、砌上的砖，一块都不会少。<br>
+    今天只做 <b>${GOAL}</b> 件就够 —— 门槛低到最差的一天也能过。
+  </div>`;
+
+  document.getElementById('v-yard').innerHTML = h;
+  document.getElementById('v-yard').style.display = '';
+  document.getElementById('v-exp').style.display = 'none';
+  document.getElementById('v-set').style.display = 'none';
+  anim = {};
+}
+
+function yardChronicle(){
+  const y = state.yard;
+  const parts = [];
+  if (y.train >= 12) parts.push('树已经很成样子了');
+  else if (y.train > 0) parts.push('树刚过膝');
+  if (y.quit >= 10) parts.push('墙砌得很厚');
+  else if (y.quit > 0) parts.push('墙上添了几块新砖');
+  if (y.study >= 8) parts.push('窗台堆满了书');
+  else if (y.study > 0) parts.push('窗内有了几本书');
+  if (y.wake >= 6) parts.push('门前石阶已经很高');
+  if (y.shower >= 8) parts.push('井水快满了');
+  if (y.sleep >= 10) parts.push('屋顶补得严实');
+  if (!parts.length) return '院子还很空，等你动第一下';
+  return parts.slice(0, 2).join('，');
+}
+
+/* ---------------------- 远行（每周一次） ---------------------- */
+const EXP_SCENES = [
+  { tag:'一 · 出村', title:'岔路口',
+    text:'村口两条路。左边是官道，绕远，但走的人多；右边是条小径，草长得齐腰，近得多。',
+    opts:[
+      { k:'safe', label:'走官道', cost:2, ok:true,  note:'稳妥，多花些力气' },
+      { k:'risk', label:'钻小径', cost:1, ok:false, note:'省力气，未必走得通' }
+    ]},
+  { tag:'二 · 途中', title:'雨',
+    text:'半路下起雨。前面有个山洞，也有棵大树。洞里有水声，树下的路还能走。',
+    opts:[
+      { k:'safe', label:'进山洞避雨', cost:2, ok:true,  note:'等雨停，稳妥' },
+      { k:'risk', label:'冒雨赶路',   cost:1, ok:false, note:'可能着凉，也可能更快' }
+    ]},
+  { tag:'三 · 尽头', title:'旧屋',
+    text:'路的尽头有间旧屋，门虚掩着。屋里有东西，但看着没什么人住。',
+    opts:[
+      { k:'safe', label:'推门进去看看', cost:2, ok:true,  note:'拿得到，只是慢些' },
+      { k:'risk', label:'绕到屋后',     cost:1, ok:false, note:'也许有更好的，也许什么都没有' }
+    ]}
+];
+
+const RELIC_POOL = [
+  { name:'一枚旧铜钱', mark:'钱', color:'#a8764f', desc:'不知哪一年的，边缘磨得很滑' },
+  { name:'半块青瓦',   mark:'瓦', color:'#7d8fa0', desc:'比你家屋顶的还旧' },
+  { name:'一小截松枝', mark:'松', color:'#6f8560', desc:'还带着一点香气' },
+  { name:'一只粗陶碗', mark:'碗', color:'#b8822c', desc:'碗底有个缺口，但很结实' },
+  { name:'一张旧地图', mark:'图', color:'#8d7b5e', desc:'画的地方你都不认得' },
+  { name:'一把铜钥匙', mark:'钥', color:'#b8822c', desc:'不知道开哪扇门' },
+  { name:'一块温石头', mark:'石', color:'#7d8fa0', desc:'握久了会变暖' },
+  { name:'一枚鸟羽',   mark:'羽', color:'#6f8560', desc:'蓝得不像真的' }
+];
+
+function weekKey(){
+  const d = new Date();
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  const wn = Math.ceil(((d - onejan) / 86400000 + onejan.getDay() + 1) / 7);
+  return d.getFullYear() + '-W' + wn;
+}
+/* 补给 = 最近 7 天（含今天）达成天数。用滚动窗口而不是自然周，
+   否则每周一进远行必然 0 补给、走不动。 */
+function supplyDays(){
+  let n = 0;
+  for (let i = 0; i < 7; i++){
+    const t = new Date();
+    t.setDate(t.getDate() - i);
+    if ((state.days[todayKey(t)] || []).length >= GOAL) n++;
+  }
+  return n;
+}
+function expState(){
+  const wk = weekKey();
+  if (!state.exp || state.exp.week !== wk){
+    state.exp = { week: wk, used: false, log: [] };
+    save();
+  }
+  return state.exp;
+}
+function expReady(){
+  const e = expState();
+  return !e.used && supplyDays() > 0;
+}
+
+function renderExp(){
+  const e = expState();
+  const wk = supplyDays();
+  const inProgress = e.log.length > 0 && e.log.length < EXP_SCENES.length;
+
+  let h = `<div class="sec" style="padding-top:14px">
+    <div class="sec-h"><span class="x">远行</span><span class="y">每周一次</span></div>
+    <div class="supply">
+      <span>本周补给</span><span class="v">${wk}</span><span>天</span>
+      <span class="sp-bar"><i style="width:${Math.min(100, wk / 7 * 100)}%"></i></span>
+    </div>`;
+
+  if (e.used && !inProgress){
+    h += `<div class="scene">
+      <div class="stag">本周已走完</div>
+      <div class="stt">路走完了</div>
+      <div class="stx">这周你带回了 ${e.log.filter(x => x.got).length} 段路上的东西。下周一，路会重新开。</div>
+    </div>`;
+    if (state.relics.length){
+      h += `<div class="sec-h"><span class="x">院子里摆着的东西</span></div>`;
+      h += state.relics.map(r => `<div class="relic">
+        <div class="ic">${esc(r.mark)}</div>
+        <div class="tx"><b>${esc(r.name)}</b><span>${esc(r.desc)}</span></div>
+      </div>`).join('');
+    }
+  } else if (!inProgress && wk === 0){
+    h += `<div class="empty">
+      这周还没有一天的记录。<br>
+      先在院子里做满 ${GOAL} 件事，路才会开。
+    </div>`;
+  } else {
+    const idx = inProgress ? e.log.length : 0;
+    const sc = EXP_SCENES[idx];
+    const used = e.log.reduce((s, x) => s + (x.cost || 0), 0);
+    const supply = wk - used;
+
+    h += `<div class="scene">
+      <div class="stag">${sc.tag}</div>
+      <div class="stt">${sc.title}</div>
+      <div class="stx">${sc.text}</div>`;
+    sc.opts.forEach((o, i) => {
+      const afford = supply >= o.cost;
+      h += `<button class="opt ${o.k === 'safe' ? 'good' : 'risky'}" data-act="exp-opt" data-i="${i}" ${afford ? '' : 'disabled'}>
+        ${o.label}
+        <span class="cost">${o.note} · 消耗补给 ${o.cost}${afford ? '' : '（不够）'}</span>
+      </button>`;
+    });
+    h += `</div>`;
+
+    h += inProgress
+      ? `<div class="note">已经走过 ${e.log.length} 段，还剩 ${EXP_SCENES.length - e.log.length} 段。</div>
+         <button class="btn ghost" data-act="exp-back" style="margin-bottom:8px">往回走，这周就到这</button>`
+      : `<div class="note">走完三段，会带回一件院子里的东西。补给不够也走不到终点，但院子不会因此少一块砖。</div>`;
+  }
+
+  h += `</div>`;
+
+  document.getElementById('v-exp').innerHTML = h;
+  document.getElementById('v-exp').style.display = '';
+  document.getElementById('v-yard').style.display = 'none';
+  document.getElementById('v-set').style.display = 'none';
+}
+
+function expChoose(i){
+  const e = expState();
+  const idx = e.log.length;
+  const sc = EXP_SCENES[idx];
+  if (!sc || !sc.opts[i]) return;
+  const o = sc.opts[i];
+  const wk = supplyDays();
+  const used = e.log.reduce((s, x) => s + (x.cost || 0), 0);
+  const supply = wk - used;
+  if (supply < o.cost){ toast('补给不够，走不动了'); return; }
+
+  let got;
+  if (o.ok){
+    got = true;
+  } else {
+    const chance = Math.min(0.85, 0.38 + supply * 0.07);
+    got = Math.random() < chance;
+  }
+  e.log.push({ k: o.k, cost: o.cost, got });
+
+  if (e.log.length >= EXP_SCENES.length){
+    e.used = true;
+    const wins = e.log.filter(x => x.got).length;
+    if (wins >= 2){
+      const have = new Set(state.relics.map(r => r.name));
+      const pool = RELIC_POOL.filter(r => !have.has(r.name));
+      const rel = pool.length ? pick(pool) : pick(RELIC_POOL);
+      state.relics.push({ name: rel.name, mark: rel.mark, color: rel.color, desc: rel.desc, date: todayKey() });
+      toast(`带回「${rel.name}」`);
+      if (state.sound) sfx('up');
+    } else {
+      toast('这趟空手而归，下周再来');
+      if (state.sound) sfx('low');
+    }
+  } else {
+    toast(got ? '走通了' : '没走通，退回来了');
+    if (state.sound) sfx(got ? 'ok' : 'low');
+  }
+  save();
+  renderExp();
+}
+
+/* 半途折返：补给不够时的出口，避免这一周卡死走不出去 */
+function expBack(){
+  const e = expState();
+  if (!e.log.length || e.used) return;
+  e.used = true;
+  save();
+  renderExp();
+  toast('折返了。这周的路就走到这');
+  if (state.sound) sfx('low');
+}
+
+/* ---------------------- 其他 / 设置 ---------------------- */
+function renderSet(){
+  const total = Object.values(state.yard).reduce((a, b) => a + b, 0);
+  let h = `<div class="sec" style="padding-top:14px">
+    <div class="sec-h"><span class="x">这院子</span></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><div class="v">${state.totalMet}</div><div class="k">达成天数</div></div>
+    <div class="stat"><div class="v">${state.bestStreak}</div><div class="k">最长连着</div></div>
+    <div class="stat"><div class="v">${total}</div><div class="k">做过的事</div></div>
+  </div>`;
+
+  h += `<div class="sec">`;
+
+  h += `<div class="set-row">
+    <div class="lb"><div class="t2">音效</div><div class="d2">打卡和远行时的一点声音</div></div>
+    <button class="sw ${state.sound ? 'on' : ''}" data-act="toggle-sound" aria-label="音效开关"><i></i></button>
+  </div>`;
+
+  h += `<div class="sec-h"><span class="x">七件事的进度</span></div>`;
+  h += TASKS.map(t => {
+    const n = state.yard[t.id] || 0;
+    return `<div class="set-row">
+      <div class="lb"><div class="t2">${t.name}</div><div class="d2">${t.act}</div></div>
+      <div style="font-size:14px;color:var(--amber);font-weight:600">${n}</div>
+    </div>`;
+  }).join('');
+
+  h += `<div class="sec-h"><span class="x">数据</span></div>
+  <div class="note" style="margin:0 0 10px">数据只存在这台手机里。清缓存或删主屏图标会丢，记得隔段时间导出一份。</div>
+  <button class="btn ghost" data-act="export" style="margin-bottom:8px">导出数据</button>
+  <button class="btn ghost" data-act="import" style="margin-bottom:8px">导入数据</button>
+  <button class="btn ghost" data-act="reset" style="color:#a35b46;border-color:#d6b5a6;margin-bottom:10px">清空全部</button>
+  <button class="btn ghost" data-act="force-update" style="margin-bottom:6px">检查更新</button>
+  <div style="text-align:center;font-size:12px;color:var(--ink3);padding:6px 0 20px">院子 ${APP_VER}</div>`;
+
+  h += `</div>`;
+
+  document.getElementById('v-set').innerHTML = h;
+  document.getElementById('v-set').style.display = '';
+  document.getElementById('v-yard').style.display = 'none';
+  document.getElementById('v-exp').style.display = 'none';
+}
+
+/* ---------------------- 弹层 ---------------------- */
+function openSheet(html){
+  document.getElementById('sheet-in').innerHTML = html;
+  document.getElementById('sheet').classList.add('on');
+}
+function closeSheet(){
+  document.getElementById('sheet').classList.remove('on');
+}
+
+/* ---------------------- 打卡 ---------------------- */
+function doTask(id){
+  const tk = TASKS.find(t => t.id === id);
+  if (!tk) return;
+  if (todayList().includes(id)){ toast('这件今天已经做过了'); return; }
+  const before = todayCount();
+  doneTask(id);
+  const after = todayCount();
+  anim[id] = true;
+  render();
+
+  if (after >= GOAL && before < GOAL){
+    const names = TASKS.filter(t => todayList().includes(t.id)).map(t => t.name).join('、');
+    openSheet(`<div class="h">今天够了</div>
+      <div class="sub">你做了 ${after} 件：${names}。</div>
+      <div class="note" style="margin:0 0 14px">院子往前走了一步。${state.streak > 1 ? '连着 ' + state.streak + ' 天了。' : ''}</div>
+      <button class="btn" data-act="close">知道了</button>`);
+    if (state.sound) sfx('up');
+  } else {
+    toast(tk.act);
+    if (state.sound) sfx('ok');
+  }
+}
+
+/* ---------------------- 音效（实时合成） ---------------------- */
+let AC = null;
+function sfx(kind){
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const now = AC.currentTime;
+    const notes = kind === 'up' ? [523.25, 659.25, 783.99]
+                : kind === 'ok' ? [587.33, 783.99]
+                : [392.00, 311.13];
+    notes.forEach((f, i) => {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      const t0 = now + i * 0.075;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.075, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0006, t0 + 0.34);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t0); o.stop(t0 + 0.36);
+    });
+  } catch(e){}
+}
+
+/* ---------------------- 导出 / 导入 ---------------------- */
+function showExport(){
+  openSheet(`<div class="h">导出数据</div>
+    <div class="sub">复制下面全部内容，存到备忘录或发给自己。</div>
+    <textarea id="exp-ta" readonly>${esc(JSON.stringify(state))}</textarea>
+    <button class="btn" data-act="copy" style="margin-top:10px">复制</button>
+    <button class="btn ghost" data-act="close" style="margin-top:8px">关闭</button>`);
+}
+function showImport(){
+  openSheet(`<div class="h">导入数据</div>
+    <div class="sub">粘贴之前导出的内容。会覆盖当前记录。</div>
+    <textarea id="imp-ta" placeholder="粘贴 JSON……"></textarea>
+    <button class="btn" data-act="do-import" style="margin-top:10px">导入</button>
+    <button class="btn ghost" data-act="close" style="margin-top:8px">取消</button>`);
+}
+function doImport(){
+  const ta = document.getElementById('imp-ta');
+  if (!ta) return;
+  try {
+    const o = JSON.parse(ta.value.trim());
+    if (!o || typeof o !== 'object') throw new Error('bad');
+    state = Object.assign(blankState(), o);
+    state.yard = Object.assign(blankState().yard, o.yard || {});
+    state.exp  = Object.assign(blankState().exp, o.exp || {});
+    if (!Array.isArray(state.relics)) state.relics = [];
+    save(); closeSheet(); render(); toast('已导入');
+  } catch(e){ toast('格式不对'); }
+}
+
+/* ---------------------- 头部 ---------------------- */
+function renderHeader(){
+  const c = todayCount(), m = todayMet();
+  document.getElementById('hd-num').innerHTML = `${Math.min(c, GOAL)}<i>/${GOAL}</i>`;
+  const d = new Date();
+  document.getElementById('hd-date').textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  const start = state.createdAt || todayKey();
+  const n = Math.max(1, dayDiff(start, todayKey()) + 1);
+  const s = state.streak > 0 ? ` · 连着 ${state.streak} 天` : '';
+  document.getElementById('hd-sub').textContent = `第 ${n} 天${s}`;
+  document.getElementById('hd-num').style.color = m ? 'var(--moss)' : 'var(--amber)';
+}
+
+/* ---------------------- 渲染调度 ---------------------- */
+function render(){
+  renderHeader();
+  if (view === 'yard') renderYard();
+  else if (view === 'exp') renderExp();
+  else renderSet();
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs .tb'), b => {
+    b.classList.toggle('on', b.dataset.t === view);
+  });
+  updateBadge();
+}
+
+function updateBadge(){
+  try {
+    if (!('setAppBadge' in navigator)) return;
+    const left = Math.max(0, GOAL - todayCount());
+    if (left > 0) navigator.setAppBadge(left);
+    else navigator.clearAppBadge();
+  } catch(e){}
+}
+
+/* ---------------------- toast ---------------------- */
+let toastT = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('on'), 1900);
+}
+
+/* ---------------------- 事件绑定 ---------------------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b){
+    if (e.target.id === 'sheet') closeSheet();
+    return;
+  }
+  const act = b.dataset.act;
+
+  if (act === 'tab'){
+    view = b.dataset.t;
+    render();
+    try { window.scrollTo(0, 0); } catch(err){}
+    return;
+  }
+  if (act === 'do'){ doTask(b.dataset.id); return; }
+  if (act === 'close'){ closeSheet(); return; }
+  if (act === 'exp-opt'){ expChoose(+b.dataset.i); return; }
+  if (act === 'exp-back'){ expBack(); return; }
+  if (act === 'toggle-sound'){ state.sound = !state.sound; save(); renderSet(); return; }
+  if (act === 'export'){ showExport(); return; }
+  if (act === 'import'){ showImport(); return; }
+  if (act === 'copy'){
+    const ta = document.getElementById('exp-ta');
+    if (ta){
+      ta.select();
+      try { ta.setSelectionRange(0, 999999); } catch(err){}
+      try { document.execCommand('copy'); toast('已复制'); }
+      catch(err){ toast('请长按手动复制'); }
+    }
+    return;
+  }
+  if (act === 'do-import'){ doImport(); return; }
+  if (act === 'force-update'){
+    if (!('serviceWorker' in navigator)){ toast('这台设备不支持自动更新'); return; }
+    toast('正在检查…');
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (!reg){ location.reload(); return; }
+      return reg.update().then(() => {
+        // 有新版本在等：让它立刻接管，controllerchange 里会自动刷新
+        if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+        else setTimeout(() => {
+          toast('已经是最新（' + APP_VER + '）');
+        }, 900);
+      });
+    }).catch(() => location.reload());
+    return;
+  }
+  if (act === 'reset'){
+    if (confirm('清空所有记录？院子和打卡都会归零，无法恢复。')){
+      state = blankState(); save(); closeSheet(); render(); toast('已清空');
+    }
+    return;
+  }
+});
+
+/* ---------------------- 启动 ---------------------- */
+/* SW 更新：iOS 加到主屏后几乎不会真正关闭，靠「下次打开自动检查」会一直挂旧页面。
+   这里做三件事：启动即检查、回到前台再检查、新版本接管后自动刷新一次。 */
+function registerSW(){
+  if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // 首次安装不刷新；只有「旧页面被新 SW 接管」才刷新，且只刷一次
+    if (!hadController || reloading) return;
+    reloading = true;
+    location.reload();
+  });
+
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+    });
+    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+  }).catch(() => {});
+}
+
+let bootDay = todayKey();
+function boot(){
+  load();
+  render();
+  setInterval(() => {
+    const k = todayKey();
+    if (bootDay !== k){ bootDay = k; rollDay(); render(); }
+  }, 60000);
+  registerSW();
+}
+boot();
+</script>
+</body>
+</html>
