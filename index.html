@@ -297,6 +297,7 @@ textarea{
 
 const SAVE_KEY  = 'rike_save_v1';    // 旧档（v1）兼容读取
 const SAVE_KEY2 = 'rike_yard_v2';    // 新档
+const APP_VER = 'v2.1';              // 每次发版改这里，和 sw.js 的 CACHE 一起 bump
 const GOAL = 3;                       // 每日达成门槛
 
 /* ---------------------- 七件事 → 院子里的七样东西 ---------------------- */
@@ -929,7 +930,9 @@ function renderSet(){
   <div class="note" style="margin:0 0 10px">数据只存在这台手机里。清缓存或删主屏图标会丢，记得隔段时间导出一份。</div>
   <button class="btn ghost" data-act="export" style="margin-bottom:8px">导出数据</button>
   <button class="btn ghost" data-act="import" style="margin-bottom:8px">导入数据</button>
-  <button class="btn ghost" data-act="reset" style="color:#a35b46;border-color:#d6b5a6;margin-bottom:18px">清空全部</button>`;
+  <button class="btn ghost" data-act="reset" style="color:#a35b46;border-color:#d6b5a6;margin-bottom:10px">清空全部</button>
+  <button class="btn ghost" data-act="force-update" style="margin-bottom:6px">检查更新</button>
+  <div style="text-align:center;font-size:12px;color:var(--ink3);padding:6px 0 20px">院子 ${APP_VER}</div>`;
 
   h += `</div>`;
 
@@ -1102,6 +1105,21 @@ document.addEventListener('click', e => {
     return;
   }
   if (act === 'do-import'){ doImport(); return; }
+  if (act === 'force-update'){
+    if (!('serviceWorker' in navigator)){ toast('这台设备不支持自动更新'); return; }
+    toast('正在检查…');
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (!reg){ location.reload(); return; }
+      return reg.update().then(() => {
+        // 有新版本在等：让它立刻接管，controllerchange 里会自动刷新
+        if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+        else setTimeout(() => {
+          toast('已经是最新（' + APP_VER + '）');
+        }, 900);
+      });
+    }).catch(() => location.reload());
+    return;
+  }
   if (act === 'reset'){
     if (confirm('清空所有记录？院子和打卡都会归零，无法恢复。')){
       state = blankState(); save(); closeSheet(); render(); toast('已清空');
@@ -1111,6 +1129,29 @@ document.addEventListener('click', e => {
 });
 
 /* ---------------------- 启动 ---------------------- */
+/* SW 更新：iOS 加到主屏后几乎不会真正关闭，靠「下次打开自动检查」会一直挂旧页面。
+   这里做三件事：启动即检查、回到前台再检查、新版本接管后自动刷新一次。 */
+function registerSW(){
+  if (!('serviceWorker' in navigator) || location.protocol !== 'https:') return;
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // 首次安装不刷新；只有「旧页面被新 SW 接管」才刷新，且只刷一次
+    if (!hadController || reloading) return;
+    reloading = true;
+    location.reload();
+  });
+
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+    });
+    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+  }).catch(() => {});
+}
+
 let bootDay = todayKey();
 function boot(){
   load();
@@ -1119,9 +1160,7 @@ function boot(){
     const k = todayKey();
     if (bootDay !== k){ bootDay = k; rollDay(); render(); }
   }, 60000);
-  if ('serviceWorker' in navigator && location.protocol === 'https:'){
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
+  registerSW();
 }
 boot();
 </script>
