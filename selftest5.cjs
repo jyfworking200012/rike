@@ -497,8 +497,31 @@ ok('过夜后 lastNight 归位今天', S("state.lastNight") === S("todayStr()"))
 // 把 key 写回：异步 flush 时 aiGenerate 的成功路径要靠它记 lastOk（aiSet 只在带 key 时写）
 S("localStorage.setItem('rike_ai', JSON.stringify({key:'sk-test', ep:'https://api.test/v1', model:'m1'}));");
 
+/* ---------- 19. v5.0 定版：首夜引导 + 重镇落成 ---------- */
+// AI key 快照摘除：本节的 doNight 不能触发 aiGenerate，否则污染异步段的 fetch 计数
+const aiKeySnap19 = store['rike_ai'];
+delete store['rike_ai'];
+
+S('state = fresh();');   // 干净的空镇、第 1 天
+ok('定版 · 第1天空镇出引导卡', S("viewToday().includes('今夜会有人来投奔')"));
+S('state.day = 2;');
+ok('定版 · 过一夜后引导卡消失', !S("viewToday().includes('今夜会有人来投奔')"));
+// 重镇：4 打卡人口 + 14 住户 = 18 ≥ 16，这一夜该触发「重镇落成」
+S('state = fresh(); state.build.hut = 7; state.day = 3;');
+S('state.pop = [{id:"wake",who:"老陈",since:1},{id:"train",who:"阿岩",since:1},{id:"study",who:"白先生",since:1},{id:"sleep",who:"灯",since:1}];');
+S('state.checks = { wake:1 }; state.res.meat = 60;');
+S('doNight();');
+ok('定版 · 重镇落成记进镇志', S('state.log.some(l => l.t.includes("重镇落成"))'));
+eq('定版 · doneTown 置位', S('state.doneTown'), 1);
+const townCount = S('state.log.filter(l => l.t.includes("重镇落成")).length');
+S('state.lastNight = "";');
+S('doNight();');
+eq('定版 · 重镇落成只发生一次', S('state.log.filter(l => l.t.includes("重镇落成")).length'), townCount);
+// key 写回：异步 flush 时 aiGenerate 的成功路径要靠它
+if (aiKeySnap19 !== undefined) store['rike_ai'] = aiKeySnap19;
+
 /* ---------- 输出 ---------- */
-console.log('\n小镇 v4.7 自检（离线衰减 + 记仇 + 官府 + AI 参谋）');
+console.log('\n小镇 v5.0 自检（离线衰减 + 记仇 + 官府 + AI 参谋 + 定版）');
 console.log('─'.repeat(52));
 if (fails.length){
   console.log('失败项：');
