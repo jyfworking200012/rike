@@ -285,7 +285,7 @@ main{padding:14px 16px 20px}
    小镇 v4 —— 打卡招人，人撑起镇子
    ========================================================================== */
 
-const APP_VER = 'v4.7';
+const APP_VER = 'v5.0';
 const SAVE = 'town_v4';
 const OLD_KEYS = ['rike_yard_v2', 'rike_v3', 'rike_v2'];
 
@@ -740,6 +740,7 @@ function fresh(){
     log: [],
     pend: null,
     came: [],
+    doneTown: null,
     legacy: null
   };
 }
@@ -1458,6 +1459,12 @@ function viewToday(){
       '<div style="color:#a39887;font-size:12px;margin-top:5px">这里从头开始。</div></div>';
   }
 
+  // 定版 · 首夜引导：新玩家唯一必经的懵逼点，一行字交代核心规则，过完第一夜永久消失
+  if (state.day === 1 && !popCount() && !state.legacy){
+    h += '<div style="background:#eef2e2;border:1px solid #d5e0bd;border-radius:12px;padding:12px 14px;font-size:13px;color:#5c6e42;line-height:1.7;margin-bottom:14px">' +
+      '<b>第一天。</b>勾上今天做到的事，点下面的「过 夜」——<br>做了的事，今夜会有人来投奔。</div>';
+  }
+
   h += rankBar();
   h += '<div class="sec-t">今天做的事 <span>' + done + ' / 7</span></div>';
   h += '<div class="tasks">';
@@ -1991,6 +1998,13 @@ function doNight(){
         report.push({ k: gone.who + ' 饿着走了', v: '人口 −1', cls: 'neg' });
       }
     }
+  }
+
+  // 定版时刻：镇子第一次长到「重镇」。只发生一次，记进镇志、写进夜报
+  if (!state.doneTown && popCount() >= 16){
+    state.doneTown = 1;
+    state.log.push({ d: state.day, t: '重镇落成。这里已经是这一带最热闹的地方了。' });
+    report.push({ k: '重镇落成', v: popCount() + ' 人 · 这一带最热闹的地方', cls: 'pos' });
   }
 
   // 4) 事件：先按概率掷是否出事，再抽哪件，再问官府 —— 只摆平不涉人命/走人的小事。
