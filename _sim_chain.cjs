@@ -276,7 +276,7 @@ console.log('通过 ' + pass + ' / 失败 ' + fail);
 if (fails.length){ console.log('失败明细：\n' + fails.map(f => '  - ' + f).join('\n')); process.exit(1); }
 
 /* 账本写进报告 */
-const report = '# 小镇 v4.7 全链条试跑报告\n\n' +
+const report = '# 小镇 v5.0 全链条试跑报告\n\n' +
   '> 时间：' + new RealDate().toLocaleString('zh-CN') + ' · 方式：vm 沙箱内真实点击驱动（打卡/过夜/盖房/升级全走 UI 入口），仅注入日期与骰子\n\n' +
   ledger.map(l => l + '\n').join('\n') +
   '\n## 终局状态\n\n- 第 ' + S('state.day') + ' 天 · ' + S('popCount()') + ' 人 · ' + S('rank().t') + '\n' +
